@@ -36,6 +36,7 @@ async def on_command_error(ctx, error):
     ignore = (commands.CommandNotFound,)
     if isinstance(error, ignore):
         return
+    raise error
 
 
 def run(token: Optional[str] = None):
