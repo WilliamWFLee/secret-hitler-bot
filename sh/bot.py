@@ -4,8 +4,7 @@
 """
 sh.bot
 
-Copyright (c) 2020 William Lee.
-Licensed under the MIT License, see LICENSE for details.
+Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 """
 
 import os
