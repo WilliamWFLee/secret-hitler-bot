@@ -43,3 +43,17 @@ class Game:
             return False
         self.players[user] = None
         return True
+
+    def remove_player(self, user: discord.User) -> bool:
+        """
+        Remove a player from the game instance
+
+        :param user: The user to remove
+        :type user: discord.User
+        :return: :data:`True` if player was remove, :data:`False` was not in game
+        :rtype: bool
+        """
+        if user not in self.players:
+            return False
+        del self.players[user]
+        return True

@@ -32,6 +32,17 @@ class SetupCog(commands.Cog, name="Setup"):
             self.games[ctx.guild] = Game(self.bot, ctx.guild)
             await ctx.send("Game created!")
 
+    @commands.command()
+    @commands.guild_only()
+    async def leave(self, ctx):
+        if ctx.guild not in self.games:
+            await ctx.send("Game has not been created yet")
+        success = self.games[ctx.guild].remove_player(ctx.author)
+        if success:
+            await ctx.send("You have left the game :cry:")
+        else:
+            await ctx.send("You weren't in the game!")
+
 
 def setup(bot):
     bot.add_cog(SetupCog(bot))
