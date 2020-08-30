@@ -9,10 +9,12 @@ Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 
 import asyncio
 import random
-from typing import Optional
+from typing import List, Optional
 
 import discord
 from discord.ext import commands
+
+from . import utils as ut
 
 MIN_PLAYERS = 5
 
@@ -44,11 +46,15 @@ class Game:
         self.bot = bot
         self.guild = guild
         self.players = {}
+        self.pres_candidate_index = 0
+        self.last_chancellor = None
+        self.last_president = None
 
-    def _get_players_with_role(self, role: str, exclude: Optional[discord.User] = None):
-        return [
-            user for user, r in self.players.items() if r == role and user != exclude
-        ]
+    async def _broadcast(self, *args, **kwargs):
+        await asyncio.gather(user.send(*args, **kwargs) for user in self.players)
+
+    def _get_players(self, predicate=lambda user, role: True) -> List[discord.User]:
+        return [user for user, role in self.players.items() if predicate(user, role)]
 
     def _randomise_roles(self):
         # Get number of liberals and fascists for player count
@@ -61,7 +67,7 @@ class Game:
         # Assign roles
         self.players = {user: role for user, role in zip(self.players, roles)}
         # Choose Hitler
-        fascists = self._get_players_with_role("fascist")
+        fascists = self._get_players(lambda _, role: role == "fascist")
         hitler = random.choice(fascists)
         self.players[hitler] = "hitler"
 
@@ -69,22 +75,65 @@ class Game:
         if role == "hitler":
             await user.send("You are **Hitler**")
             if len(self.players) <= 6:
-                other_fascist = self._get_players_with_role("fascist")[0]
-                await user.send(f"The other **fascist** is {str(other_fascist)}")
+                other_fascist = self._get_players(lambda _, role: role == "fascist")[0]
+                await user.send(f"The other **fascist** is {other_fascist}")
         else:
             await user.send(f"You are a **{role.title()}**")
         if role == "fascist":
-            other_fascists = self._get_players_with_role("fascist", exclude=user)
-            hitler = self._get_players_with_role("hitler")[0]
-            await user.send(f"{str(hitler)} is **Hitler**")
+            other_fascists = self._get_players(
+                lambda check_user, role: role == "fascist" and check_user != user
+            )
+            hitler = self._get_players(lambda _, role: role == "hitler")[0]
+            await user.send(f"{hitler} is **Hitler**")
             await user.send(
                 "The other **fascists** are: "
                 + ", ".join(str(fascist) for fascist in other_fascists)
             )
 
+    async def _pres_choose_chancellor(
+        self, pres_candidate: discord.User = None
+    ) -> discord.User:
+        def pres_candidate_check(m):
+            return m.author == pres_candidate
+
+        candidates = self._get_players(
+            predicate=(
+                lambda user, _: user != self.last_chancellor
+                if len(self.players) <= 6
+                else user not in (self.last_president, self.last_chancellor)
+            )
+        )
+        cdtes_list = "\n".join(
+            "{i}: {candidate}" for i, candidate in enumerate(candidates)
+        )
+        await pres_candidate.send("Choose someone to be the next chancellor candidate:")
+        await pres_candidate.send(cdtes_list)
+        await pres_candidate.send("Send the number of the player to nominate:")
+
+        candidate_idx = await ut.get_int_from_user(
+            self.bot,
+            pres_candidate,
+            accept=range(1, len(candidates + 1)),
+            no_accept_msg="The number you selected does not correspond to a candidate",
+        )
+
+        return candidates[candidate_idx]
+
     async def _show_roles(self):
         await asyncio.gather(
             *(self._show_role(user, role) for user, role in self.players.items())
+        )
+
+    async def _hold_election(self, pres_candidate: Optional[discord.User] = None):
+        if pres_candidate is None:  # If it's not a special election
+            pres_candidate = list(self.players)[self.pres_candidate_index]
+            self.pres_candidate_index += 1
+        self._broadcast(f"The ***presidential** candidate is {pres_candidate}")
+        # Have the presidential candidate choose a chancellor
+        chancellor_candidate = self._pres_choose_chancellor(pres_candidate)
+        self._broadcast(
+            f"{pres_candidate} has nominated "
+            f"{chancellor_candidate} as **chancellor** candidate"
         )
 
     def add_player(self, user: discord.User) -> bool:
