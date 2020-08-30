@@ -11,6 +11,8 @@ Licensed under the MIT License, see LICENSE for details.
 import discord
 from discord.ext import commands
 
+MIN_PLAYERS = 5
+
 
 class Game:
     """
@@ -66,4 +68,8 @@ class Game:
         :type channel: discord.TextChannel
         """
         self.channel = channel
-        await channel.send("Test")
+        if len(self.players) < MIN_PLAYERS:
+            return await channel.send(
+                f"Minimum number of players required is {MIN_PLAYERS}: "
+                f"{MIN_PLAYERS - len(self.players)} more player(s) required"
+            )
