@@ -29,3 +29,17 @@ class Game:
         self.bot = bot
         self.guild = guild
         self.players = {}
+
+    def add_player(self, user: discord.User) -> bool:
+        """
+        Add a player to this game instance
+
+        :param user: The user to add
+        :type user: discord.User
+        :return: :data:`True` if the player was added, :data:`False` if the player has already been added
+        :rtype: bool
+        """
+        if user in self.players:
+            return False
+        self.players[user] = None
+        return True
