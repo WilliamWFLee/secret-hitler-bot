@@ -1,13 +1,17 @@
-python-template
-===============
+secret-hitler-bot
+=================
 
-A template repo for Python development
+A Discord bot for conducting games of `Secret Hitler`_.
 
-Includes: 
+Credits & License
+-----------------
 
-- This ``README.rst``
-- ``.gitignore`` for Python
-- ``requirements.txt``
-- Ready for use with Black, with Flake8 config to suit
-- Hound (``.hound.yml``)
-- ``pyproject.toml``, with Black-compatible isort config
+Secret Hitler was created by Mike Boxleiter, Tommy Maranges, Max Temkin, and Mac Schubert.
+
+Secret Hitler is licensed under a `Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License`_.
+
+.. image:: https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png
+    :alt: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 License
+
+.. _`Secret Hitler`: https://secrethitler.com
+.. _`Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License`: https://creativecommons.org/licenses/by-nc-sa/4.0/
