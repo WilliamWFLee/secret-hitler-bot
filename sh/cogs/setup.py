@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import asyncio
+
+import discord
 from discord.ext import commands
 
 from ..game import Game
@@ -10,6 +13,13 @@ class SetupCog(commands.Cog, name="Setup"):
     def __init__(self, bot):
         self.bot = bot
         self.games = {}
+        self.game_tasks = {}
+
+    async def run_game(self, guild: discord.Guild, channel: discord.TextChannel):
+        try:
+            await self.games[guild].start(channel)
+        finally:
+            del self.game_tasks[guild]
 
     @commands.command()
     @commands.guild_only()
@@ -42,6 +52,17 @@ class SetupCog(commands.Cog, name="Setup"):
             await ctx.send("You have left the game :cry:")
         else:
             await ctx.send("You weren't in the game!")
+
+    @commands.command()
+    @commands.guild_only()
+    async def start(self, ctx):
+        if ctx.guild not in self.games:
+            await ctx.send("Game has not been created")
+        elif ctx.guild in self.game_tasks:
+            await ctx.send("Game has already started")
+        else:
+            task = asyncio.create_task(self.run_game(ctx.guild, ctx.channel))
+            self.game_tasks[ctx.guild] = task
 
 
 def setup(bot):

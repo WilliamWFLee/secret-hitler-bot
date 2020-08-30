@@ -57,3 +57,13 @@ class Game:
             return False
         del self.players[user]
         return True
+
+    async def start(self, channel: discord.TextChannel):
+        """
+        Start the game.
+
+        :param channel: The text channel to bind server-wide game output to
+        :type channel: discord.TextChannel
+        """
+        self.channel = channel
+        await channel.send("Test")
