@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+sh.cogs.setup
+
+Copyright (c) 2020 William Lee.
+Licensed under the MIT License, see LICENSE for details.
+"""
+
 import asyncio
 
 import discord
