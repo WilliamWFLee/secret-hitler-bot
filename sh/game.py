@@ -8,10 +8,24 @@ Copyright (c) 2020 William Lee.
 Licensed under the MIT License, see LICENSE for details.
 """
 
+import asyncio
+import random
+from typing import Optional
+
 import discord
 from discord.ext import commands
 
 MIN_PLAYERS = 5
+
+
+PLAYERS_TO_LIB_FASC_COUNT = {
+    5: (3, 2),
+    6: (4, 2),
+    7: (4, 3),
+    8: (5, 3),
+    9: (5, 4),
+    10: (6, 4),
+}
 
 
 class Game:
@@ -31,6 +45,48 @@ class Game:
         self.bot = bot
         self.guild = guild
         self.players = {}
+
+    def _get_players_with_role(self, role: str, exclude: Optional[discord.User] = None):
+        return [
+            user for user, r in self.players.items() if r == role and user != exclude
+        ]
+
+    def _randomise_roles(self):
+        # Get number of liberals and fascists for player count
+        num_libs, num_fascs = PLAYERS_TO_LIB_FASC_COUNT[len(self.players)]
+        # Produce roles
+        roles = ["liberal" for _ in range(num_libs)]
+        roles.extend("fascist" for _ in range(num_fascs))
+        # Shuffle them
+        random.shufle(roles)
+        # Assign roles
+        self.players = {user: role for user, role in zip(self.players, roles)}
+        # Choose Hitler
+        fascists = self._get_players_with_role("fascist")
+        hitler = random.choice(fascists)
+        self.players[hitler] = "hitler"
+
+    async def _show_role(self, user: discord.User, role: str):
+        if role == "hitler":
+            await user.send("You are **Hitler**")
+            if len(self.players) <= 6:
+                other_fascist = self._get_players_with_role("fascist")[0]
+                await user.send(f"The other **fascist** is {str(other_fascist)}")
+        else:
+            await user.send(f"You are a **{role.title()}**")
+        if role == "fascist":
+            other_fascists = self._get_players_with_role("fascist", exclude=user)
+            hitler = self._get_players_with_role("hitler")[0]
+            await user.send(f"{str(hitler)} is **Hitler**")
+            await user.send(
+                "The other **fascists** are: "
+                + ", ".join(str(fascist) for fascist in other_fascists)
+            )
+
+    async def _show_roles(self):
+        await asyncio.gather(
+            *(self._show_role(user, role) for user, role in self.players.items())
+        )
 
     def add_player(self, user: discord.User) -> bool:
         """
@@ -73,3 +129,5 @@ class Game:
                 f"Minimum number of players required is {MIN_PLAYERS}: "
                 f"{MIN_PLAYERS - len(self.players)} more player(s) required"
             )
+        self._randomise_roles()
+        await self._show_roles()
