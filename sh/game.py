@@ -201,7 +201,7 @@ class Game:
         await self._reset_election_tracker()
         await self._reveal_deck_distribution()
 
-    async def _play_election_round(self):
+    async def _play_election_round(self) -> bool:
         while True:
             success = await self._hold_election()
             if not success:
@@ -214,9 +214,29 @@ class Game:
                     await self._chaos()
             else:
                 break
+        if self.state.hitler_elected() and self.state.policy_counts["fascist"] >= 3:
+            await self._broadcast(
+                "There are more than three fascist policies enacted "
+                "and you have elected Hitler as your chancellor"
+            )
+            await self._declare_win("fascist")
+            return False
+        return True
 
     async def _play_round(self) -> bool:
-        await self._play_election_round()
+        game_on = await self._play_election_round()
+        if not game_on:
+            return False
+
+    async def _reveal_roles(self):
+        await self._broadcast("Everyone's roles:\n")
+        await self._broadcast(
+            "\n".join("{user}: **{role}**" for user, role in self.state.players.items())
+        )
+
+    async def _declare_win(self, role: str):
+        await self._broadcast(f"The **{role.title()}s** have won")
+        await self._reveal_roles()
 
     def add_player(self, user: discord.User) -> bool:
         """

@@ -237,3 +237,12 @@ class GameState:
         :rtype: bool
         """
         return self.election_tracker < 3
+
+    def hitler_elected(self) -> bool:
+        """
+        Returns if Hitler has been elected
+
+        :return: Whether Hitler has been elected
+        :rtype: bool
+        """
+        return self.players[self.chancellor] == "hitler"
