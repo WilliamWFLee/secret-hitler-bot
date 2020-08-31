@@ -23,11 +23,11 @@ async def get_int_from_user(
     no_accept_msg: str = "You didn't give an integer in the accepted range.",
 ):
     def check(m):
-        return m.strip().isnumeric() and m.author == user
+        return m.content.strip().isnumeric() and m.author == user
 
     while True:
         msg = await client.wait_for("message", check=check)
-        integer = int(msg.strip())
+        integer = int(msg.content.strip())
         if accept is not None and integer not in accept:
             await user.send(no_accept_msg)
             await user.send("Please try again.")
