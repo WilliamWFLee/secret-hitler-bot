@@ -56,7 +56,7 @@ class GameState:
             "liberal": 0,
         }
         for policy_type in self.policies:
-            counts[policy] += 1
+            counts[policy_type] += 1
 
         return counts
 
