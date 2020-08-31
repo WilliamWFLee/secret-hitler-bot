@@ -126,10 +126,10 @@ class Game:
     async def _hold_election(
         self, pres_candidate: Optional[discord.User] = None
     ) -> Optional[Tuple[discord.User, discord.User]]:
+        await self._broadcast("**ELECTION**")
         if pres_candidate is None:  # If it's not a special election
             pres_candidate = self.state.get_presidential_candidate()
-
-        await self._broadcast(f"The **presidential** candidate is {pres_candidate}")
+            await self._broadcast(f"The **presidential** candidate is {pres_candidate}")
         # Have the presidential candidate choose a chancellor
         chancellor_candidate = await self._pres_choose_chancellor(pres_candidate)
         await self._broadcast(
