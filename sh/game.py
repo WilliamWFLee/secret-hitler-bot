@@ -164,7 +164,7 @@ class Game:
             pres_candidate = list(self.players)[self.pres_candidate_index]
             self.pres_candidate_index += 1
 
-        await self._broadcast(f"The ***presidential** candidate is {pres_candidate}")
+        await self._broadcast(f"The **presidential** candidate is {pres_candidate}")
         # Have the presidential candidate choose a chancellor
         chancellor_candidate = self._pres_choose_chancellor(pres_candidate)
         await self._broadcast(
