@@ -8,26 +8,15 @@ Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 """
 
 import asyncio
-import random
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import discord
 from discord.ext import commands
 
 from . import utils as ut
+from .state import GameState
 
 MIN_PLAYERS = 5
-FASCIST_POLICY_COUNT = 11
-LIBERAL_POLICY_COUNT = 6
-
-PLAYERS_TO_LIB_FASC_COUNT = {
-    5: (3, 2),
-    6: (4, 2),
-    7: (4, 3),
-    8: (5, 3),
-    9: (5, 4),
-    10: (6, 4),
-}
 
 
 class Game:
@@ -46,56 +35,24 @@ class Game:
         """
         self.bot = bot
         self.guild = guild
-        self.players = {}
-        self.pres_candidate_index = 0
-        self.chancellor = None
-        self.president = None
-        self.election_tracker = 0
-        self.policies = []
-        self.policy_counts = {
-            "fascist": 0,
-            "liberal": 0,
-        }
+        self.state = GameState()
 
     async def _broadcast(self, *args, **kwargs):
-        await asyncio.gather(*(user.send(*args, **kwargs) for user in self.players))
-
-    def _get_players(self, predicate=lambda user, role: True) -> List[discord.User]:
-        return [user for user, role in self.players.items() if predicate(user, role)]
-
-    def _randomise_roles(self):
-        # Get number of liberals and fascists for player count
-        num_libs, num_fascs = PLAYERS_TO_LIB_FASC_COUNT[len(self.players)]
-        # Produce roles
-        roles = ["liberal" for _ in range(num_libs)]
-        roles.extend("fascist" for _ in range(num_fascs))
-        # Shuffle them
-        random.shuffle(roles)
-        # Assign roles
-        self.players = {user: role for user, role in zip(self.players, roles)}
-        # Choose Hitler
-        fascists = self._get_players(lambda _, role: role == "fascist")
-        hitler = random.choice(fascists)
-        self.players[hitler] = "hitler"
-
-    def _populate_policies(self):
-        self.policies = ["fascist" for _ in range(FASCIST_POLICY_COUNT)]
-        self.policies.extend("liberal" for _ in range(LIBERAL_POLICY_COUNT))
-
-    def _shuffle_policies(self):
-        random.shuffle(self.policies)
+        await asyncio.gather(
+            *(user.send(*args, **kwargs) for user in self.state.players)
+        )
 
     async def _reveal_top_policy(self):
-        await self._enact_policy(self.policies.pop())
+        policy_type = self.state.enact_top_policy()
+        await self._show_enacted_policy(policy_type)
 
-    async def _enact_policy(self, policy_type: str):
-        self.policy_counts[policy_type] += 1
+    async def _show_enacted_policy(self, policy_type: str):
         await self._broadcast(f"A **{policy_type}** policy has been enacted")
         await self._broadcast(
             "There are now "
             + " and ".join(
                 f"**{count} {policy_type}**"
-                for policy_type, count in self.policy_counts.items()
+                for policy_type, count in self.state.policy_counts.items()
             )
             + " policies enacted"
         )
@@ -103,39 +60,26 @@ class Game:
     async def _show_role(self, user: discord.User, role: str):
         if role == "hitler":
             await user.send("You are **Hitler**")
-            if len(self.players) <= 6:
-                other_fascist = self._get_players(lambda _, role: role == "fascist")[0]
+            if len(self.state.players) <= 6:
+                other_fascist = self.state.get_fascist_players()[0]
                 await user.send(f"The other **fascist** is {other_fascist}")
         else:
             await user.send(f"You are a **{role.title()}**")
-        if role == "fascist":
-            other_fascists = self._get_players(
-                lambda check_user, role: role == "fascist" and check_user != user
-            )
-            hitler = self._get_players(lambda _, role: role == "hitler")[0]
-            await user.send(f"{hitler} is **Hitler**")
-            if other_fascists:
-                await user.send(
-                    "The other **fascists** are: "
-                    + ", ".join(str(fascist) for fascist in other_fascists)
-                )
+
+            if role == "fascist":
+                other_fascists = self.state.get_fascist_players(exclude=(user,))
+                hitler = self.state.get_hitler()
+                await user.send(f"{hitler} is **Hitler**")
+                if other_fascists:
+                    await user.send(
+                        "The other **fascists** are: "
+                        + ", ".join(str(fascist) for fascist in other_fascists)
+                    )
 
     async def _pres_choose_chancellor(
         self, pres_candidate: discord.User = None
     ) -> discord.User:
-        def pres_candidate_check(m):
-            return m.author == pres_candidate
-
-        candidates = self._get_players(
-            predicate=(
-                lambda user, _: (
-                    user != self.chancellor
-                    if len(self.players) <= 6
-                    else user not in (self.president, self.chancellor)
-                )
-                and user != pres_candidate
-            )
-        )
+        candidates = self.state.get_chancellor_candidates(pres_candidate)
         cdtes_list = "\n".join(
             f"{i + 1}: {candidate}" for i, candidate in enumerate(candidates)
         )
@@ -154,7 +98,7 @@ class Game:
 
     async def _show_roles(self):
         await asyncio.gather(
-            *(self._show_role(user, role) for user, role in self.players.items())
+            *(self._show_role(user, role) for user, role in self.state.players.items())
         )
 
     async def _hold_vote(self, chancellor_candidate: discord.User):
@@ -170,7 +114,7 @@ class Game:
                 yes_text="Ja!",
                 no_text="Nein",
             )
-            for user in self.players
+            for user in self.state.players
         }
         # Gathers the votes, order is preserved
         votes = await asyncio.gather(*user_to_aw.values())
@@ -183,8 +127,7 @@ class Game:
         self, pres_candidate: Optional[discord.User] = None
     ) -> Optional[Tuple[discord.User, discord.User]]:
         if pres_candidate is None:  # If it's not a special election
-            pres_candidate = list(self.players)[self.pres_candidate_index]
-            self.pres_candidate_index += 1
+            pres_candidate = self.state.get_presidential_candidate()
 
         await self._broadcast(f"The **presidential** candidate is {pres_candidate}")
         # Have the presidential candidate choose a chancellor
@@ -204,17 +147,48 @@ class Game:
         )
 
         ja_votes = sum(1 for vote in user_to_vote.values() if vote)
-        if ja_votes / len(self.players) > 0.5:
+        if ja_votes / len(self.state.players) > 0.5:
             await self._broadcast(
                 f"**{pres_candidate}** has been elected as **president**\n"
                 f"**{chancellor_candidate}** has been elected as **chancellor**"
             )
-            return pres_candidate, chancellor_candidate
+            self.state.president = pres_candidate
+            self.state.chancellor = chancellor_candidate
+            return True
         await self._broadcast(
             f"**{pres_candidate} and {chancellor_candidate}** "
             "have not been elected as **president** and **chancellor**"
         )
-        return None
+        return False
+
+    async def _play_election_round(self):
+        while True:
+            success = await self._hold_election()
+            if not success:
+                self.state.advance_election_tracker()
+                await self._broadcast(
+                    "The election tracker has been advanced by 1, "
+                    f"and is now at **{self.state.election_tracker}**"
+                )
+                if not self.state.populace_content():
+                    await self._broadcast(
+                        "You've failed to elect a government three times in a row"
+                    )
+                    await self._broadcast("The country has been thrown into chaos!")
+                    await self._broadcast(
+                        "The policy from the top of the deck "
+                        "will be revealed and enacted immediately."
+                    )
+                    await self._reveal_top_policy()
+                    self.state.reset_election_tracker()
+                    await self._broadcast("The election tracker has been reset to 0")
+                    self.state.reset_term_limits()
+                    await self._broadcast("Term limits for chancellor have been reset")
+            else:
+                break
+
+    async def _play_round(self) -> bool:
+        await self._play_election_round()
 
     def add_player(self, user: discord.User) -> bool:
         """
@@ -225,9 +199,9 @@ class Game:
         :return: :data:`True` if the player was added, :data:`False` if the player has already been added
         :rtype: bool
         """
-        if user in self.players:
+        if user in self.state.players:
             return False
-        self.players[user] = None
+        self.state.players[user] = None
         return True
 
     def remove_player(self, user: discord.User) -> bool:
@@ -239,9 +213,9 @@ class Game:
         :return: :data:`True` if player was remove, :data:`False` was not in game
         :rtype: bool
         """
-        if user not in self.players:
+        if user not in self.state.players:
             return False
-        del self.players[user]
+        del self.state.players[user]
         return True
 
     async def start(self, channel: discord.TextChannel):
@@ -252,33 +226,18 @@ class Game:
         :type channel: discord.TextChannel
         """
         self.channel = channel
-        if len(self.players) < MIN_PLAYERS:
+        if len(self.state.players) < MIN_PLAYERS:
             return await channel.send(
                 f"Minimum number of players required is {MIN_PLAYERS}: "
-                f"{MIN_PLAYERS - len(self.players)} more player(s) required"
+                f"{MIN_PLAYERS - len(self.state.players)} more player(s) required"
             )
-        self._randomise_roles()
-        self._populate_policies()
-        self._shuffle_policies()
+        self.state.randomise_roles()
+        self.state.populate_policies()
+        self.state.shuffle_policies()
         await self._show_roles()
-        while self.election_tracker < 3:
-            government = await self._hold_election()
-            if government is None:
-                self.election_tracker += 1
-                await self._broadcast(
-                    "The election tracker has been advanced by 1, "
-                    f"and is now at **{self.election_tracker}**"
-                )
-            else:
-                self.president, self.chancellor = government
-                break
-        else:
-            await self._broadcast(
-                "You've failed to elect a government three times in a row"
-            )
-            await self._broadcast("The country has been thrown into chaos!")
-            await self._broadcast(
-                "The policy from the top of the deck "
-                "will be revealed and enacted immediately."
-            )
-            await self._reveal_top_policy()
+        running = True
+        while running:
+            game_continue = await self._play_round()
+            if not game_continue:
+                running = False
+        self.state.reset()
