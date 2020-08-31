@@ -169,7 +169,7 @@ class Game:
         await self._broadcast(
             "There are "
             + " and ".join(
-                f"{count} {policy_type}"
+                f"**{count} {policy_type}**"
                 for policy_type, count in self.state.deck_distribution.items()
             )
             + " policies in the deck"
