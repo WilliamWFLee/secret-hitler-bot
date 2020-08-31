@@ -35,7 +35,11 @@ async def on_command_error(ctx, error):
     ignore = (commands.CommandNotFound,)
     if isinstance(error, ignore):
         return
-    raise error
+    elif isinstance(error, commands.NoPrivateMessage):
+        await ctx.send("You can't use this command in a DM!")
+    else:
+        await ctx.send("An error has occurred. Please try again later.")
+        raise error
 
 
 def run(token: Optional[str] = None):
