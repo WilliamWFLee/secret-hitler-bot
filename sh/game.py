@@ -143,7 +143,7 @@ class Game:
                 user,
                 message=(
                     "Vote on whether you want "
-                    f"{chancellor_candidate} to be chancellor"
+                    f"**{chancellor_candidate}** to be chancellor"
                 ),
                 yes_text="Ja!",
                 no_text="Nein",
@@ -151,7 +151,6 @@ class Game:
             for user in self.players
         }
         # Gathers the votes, order is preserved
-        await self._broadcast("Waiting for players to cast votes...")
         votes = await asyncio.gather(*user_to_aw.values())
 
         # Maps the player to their vote
@@ -169,15 +168,15 @@ class Game:
         # Have the presidential candidate choose a chancellor
         chancellor_candidate = await self._pres_choose_chancellor(pres_candidate)
         await self._broadcast(
-            f"{pres_candidate} has nominated "
-            f"{chancellor_candidate} as **chancellor** candidate"
+            f"**{pres_candidate}** has nominated "
+            f"**{chancellor_candidate}** as **chancellor** candidate"
         )
         # Hold vote
         user_to_vote = await self._hold_vote(chancellor_candidate)
         await self._broadcast("The results of the election:")
         await self._broadcast(
             "\n".join(
-                f"{user} voted " + ("Ja!" if vote else "Nein")
+                f"{user} voted **{{}}**".format("Ja!" if vote else "Nein")
                 for user, vote in user_to_vote.items()
             )
         )
@@ -185,10 +184,14 @@ class Game:
         ja_votes = sum(1 for vote in user_to_vote.values() if vote)
         if ja_votes / len(self.players) > 0.5:
             await self._broadcast(
-                f"{chancellor_candidate} has been elected as chancellor"
+                f"**{pres_candidate}** has been elected as **president**"
+                f"**{chancellor_candidate}** has been elected as **chancellor**"
             )
             return chancellor_candidate
-        await self._broadcast(f"{chancellor_candidate} did not get a majority vote")
+        await self._broadcast(
+            f"**{pres_candidate} and {chancellor_candidate}** "
+            "have not been elected as **president** and **chancellor**"
+        )
         return None
 
     def add_player(self, user: discord.User) -> bool:
