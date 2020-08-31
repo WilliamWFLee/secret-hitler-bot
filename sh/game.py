@@ -114,7 +114,7 @@ class Game:
             )
         )
         cdtes_list = "\n".join(
-            f"{i}: {candidate}" for i, candidate in enumerate(candidates)
+            f"{i + 1}: {candidate}" for i, candidate in enumerate(candidates)
         )
         await pres_candidate.send("Choose someone to be the next chancellor candidate:")
         await pres_candidate.send(cdtes_list)
@@ -127,7 +127,7 @@ class Game:
             no_accept_msg="The number you selected does not correspond to a candidate",
         )
 
-        return candidates[candidate_idx]
+        return candidates[candidate_idx - 1]
 
     async def _show_roles(self):
         await asyncio.gather(
