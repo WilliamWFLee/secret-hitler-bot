@@ -66,7 +66,7 @@ class Game:
         roles = ["liberal" for _ in range(num_libs)]
         roles.extend("fascist" for _ in range(num_fascs))
         # Shuffle them
-        random.shufle(roles)
+        random.shuffle(roles)
         # Assign roles
         self.players = {user: role for user, role in zip(self.players, roles)}
         # Choose Hitler
