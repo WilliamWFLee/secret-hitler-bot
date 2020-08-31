@@ -239,7 +239,7 @@ class Game:
             self.chancellor = await self._hold_election()
             if self.chancellor is None:
                 self.election_tracker += 1
-                self._broadcast(
+                await self._broadcast(
                     "The election tracker has been advanced by 1, "
                     f"and is now at {self.election_tracker}"
                 )
