@@ -54,7 +54,7 @@ class Game:
         self.policies = []
 
     async def _broadcast(self, *args, **kwargs):
-        await asyncio.gather(user.send(*args, **kwargs) for user in self.players)
+        await asyncio.gather(*(user.send(*args, **kwargs) for user in self.players))
 
     def _get_players(self, predicate=lambda user, role: True) -> List[discord.User]:
         return [user for user, role in self.players.items() if predicate(user, role)]
