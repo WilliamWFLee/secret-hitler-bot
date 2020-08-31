@@ -114,7 +114,7 @@ class Game:
             )
         )
         cdtes_list = "\n".join(
-            "{i}: {candidate}" for i, candidate in enumerate(candidates)
+            f"{i}: {candidate}" for i, candidate in enumerate(candidates)
         )
         await pres_candidate.send("Choose someone to be the next chancellor candidate:")
         await pres_candidate.send(cdtes_list)
