@@ -9,7 +9,7 @@ Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 
 import asyncio
 import random
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import discord
 from discord.ext import commands
@@ -48,10 +48,14 @@ class Game:
         self.guild = guild
         self.players = {}
         self.pres_candidate_index = 0
-        self.last_chancellor = None
-        self.last_president = None
+        self.chancellor = None
+        self.president = None
         self.election_tracker = 0
         self.policies = []
+        self.policy_counts = {
+            "fascist": 0,
+            "liberal": 0,
+        }
 
     async def _broadcast(self, *args, **kwargs):
         await asyncio.gather(*(user.send(*args, **kwargs) for user in self.players))
@@ -75,11 +79,26 @@ class Game:
         self.players[hitler] = "hitler"
 
     def _populate_policies(self):
-        self.policies = ["Fascist" for _ in range(FASCIST_POLICY_COUNT)]
-        self.policies.extend("Liberal" for _ in range(LIBERAL_POLICY_COUNT))
+        self.policies = ["fascist" for _ in range(FASCIST_POLICY_COUNT)]
+        self.policies.extend("liberal" for _ in range(LIBERAL_POLICY_COUNT))
 
     def _shuffle_policies(self):
         random.shuffle(self.policies)
+
+    async def _reveal_top_policy(self):
+        await self._enact_policy(self.policies.pop())
+
+    async def _enact_policy(self, policy_type: str):
+        self.policy_counts[policy_type] += 1
+        await self._broadcast(f"A **{policy_type}** policy has been enacted")
+        await self._broadcast(
+            "There are now "
+            + " and ".join(
+                f"**{count} {policy_type}**"
+                for policy_type, count in self.policy_counts.items()
+            )
+            + " policies enacted"
+        )
 
     async def _show_role(self, user: discord.User, role: str):
         if role == "hitler":
@@ -109,9 +128,12 @@ class Game:
 
         candidates = self._get_players(
             predicate=(
-                lambda user, _: user != self.last_chancellor
-                if len(self.players) <= 6
-                else user not in (self.last_president, self.last_chancellor)
+                lambda user, _: (
+                    user != self.chancellor
+                    if len(self.players) <= 6
+                    else user not in (self.president, self.chancellor)
+                )
+                and user != pres_candidate
             )
         )
         cdtes_list = "\n".join(
@@ -159,7 +181,7 @@ class Game:
 
     async def _hold_election(
         self, pres_candidate: Optional[discord.User] = None
-    ) -> Optional[discord.User]:
+    ) -> Optional[Tuple[discord.User, discord.User]]:
         if pres_candidate is None:  # If it's not a special election
             pres_candidate = list(self.players)[self.pres_candidate_index]
             self.pres_candidate_index += 1
@@ -184,10 +206,10 @@ class Game:
         ja_votes = sum(1 for vote in user_to_vote.values() if vote)
         if ja_votes / len(self.players) > 0.5:
             await self._broadcast(
-                f"**{pres_candidate}** has been elected as **president**"
+                f"**{pres_candidate}** has been elected as **president**\n"
                 f"**{chancellor_candidate}** has been elected as **chancellor**"
             )
-            return chancellor_candidate
+            return pres_candidate, chancellor_candidate
         await self._broadcast(
             f"**{pres_candidate} and {chancellor_candidate}** "
             "have not been elected as **president** and **chancellor**"
@@ -240,14 +262,23 @@ class Game:
         self._shuffle_policies()
         await self._show_roles()
         while self.election_tracker < 3:
-            self.chancellor = await self._hold_election()
-            if self.chancellor is None:
+            government = await self._hold_election()
+            if government is None:
                 self.election_tracker += 1
                 await self._broadcast(
                     "The election tracker has been advanced by 1, "
-                    f"and is now at {self.election_tracker}"
+                    f"and is now at **{self.election_tracker}**"
                 )
             else:
+                self.president, self.chancellor = government
                 break
         else:
-            pass
+            await self._broadcast(
+                "You've failed to elect a government three times in a row"
+            )
+            await self._broadcast("The country has been thrown into chaos!")
+            await self._broadcast(
+                "The policy from the top of the deck "
+                "will be revealed and enacted immediately."
+            )
+            await self._reveal_top_policy()
