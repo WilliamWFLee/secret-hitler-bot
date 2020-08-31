@@ -166,11 +166,11 @@ class Game:
         await self._broadcast("The election tracker has been reset to 0")
 
     async def _reveal_deck_distribution(self):
-        distribution = self.state.deck_distribution
         await self._broadcast(
             "There are "
             + " and ".join(
-                f"{count} {policy_type}" for policy_type, count in distribution.items()
+                f"{count} {policy_type}"
+                for policy_type, count in self.state.deck_distribution.items()
             )
             + " policies in the deck"
         )
