@@ -166,13 +166,13 @@ class Game:
 
         await self._broadcast(f"The **presidential** candidate is {pres_candidate}")
         # Have the presidential candidate choose a chancellor
-        chancellor_candidate = self._pres_choose_chancellor(pres_candidate)
+        chancellor_candidate = await self._pres_choose_chancellor(pres_candidate)
         await self._broadcast(
             f"{pres_candidate} has nominated "
             f"{chancellor_candidate} as **chancellor** candidate"
         )
         # Hold vote
-        user_to_vote = self._hold_vote(chancellor_candidate)
+        user_to_vote = await self._hold_vote(chancellor_candidate)
         await self._broadcast("The results of the election:")
         await self._broadcast(
             "\n".join(
