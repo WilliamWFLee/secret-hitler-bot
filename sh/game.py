@@ -49,6 +49,7 @@ class Game:
         self.pres_candidate_index = 0
         self.last_chancellor = None
         self.last_president = None
+        self.election_tracker = 0
 
     async def _broadcast(self, *args, **kwargs):
         await asyncio.gather(user.send(*args, **kwargs) for user in self.players)
@@ -124,17 +125,61 @@ class Game:
             *(self._show_role(user, role) for user, role in self.players.items())
         )
 
-    async def _hold_election(self, pres_candidate: Optional[discord.User] = None):
+    async def _hold_vote(self, chancellor_candidate: discord.User):
+        # A dictionary mapping player to vote awaitable
+        user_to_aw = {
+            user: ut.get_vote_from_user(
+                self.bot,
+                user,
+                message=(
+                    "Vote on whether you want "
+                    f"{chancellor_candidate} to be chancellor"
+                ),
+                yes_text="Ja!",
+                no_text="Nein",
+            )
+            for user in self.players
+        }
+        # Gathers the votes, order is preserved
+        await self._broadcast("Waiting for players to cast votes...")
+        votes = await asyncio.gather(*user_to_aw.values())
+
+        # Maps the player to their vote
+        user_to_vote = {user: vote for user, vote in zip(user_to_aw, votes)}
+        return user_to_vote
+
+    async def _hold_election(
+        self, pres_candidate: Optional[discord.User] = None
+    ) -> Optional[discord.User]:
         if pres_candidate is None:  # If it's not a special election
             pres_candidate = list(self.players)[self.pres_candidate_index]
             self.pres_candidate_index += 1
-        self._broadcast(f"The ***presidential** candidate is {pres_candidate}")
+
+        await self._broadcast(f"The ***presidential** candidate is {pres_candidate}")
         # Have the presidential candidate choose a chancellor
         chancellor_candidate = self._pres_choose_chancellor(pres_candidate)
-        self._broadcast(
+        await self._broadcast(
             f"{pres_candidate} has nominated "
             f"{chancellor_candidate} as **chancellor** candidate"
         )
+        # Hold vote
+        user_to_vote = self._hold_vote(chancellor_candidate)
+        await self._broadcast("The results of the election:")
+        await self._broadcast(
+            "\n".join(
+                f"{user} voted " + ("Ja!" if vote else "Nein")
+                for user, vote in user_to_vote.items()
+            )
+        )
+
+        ja_votes = sum(1 for vote in user_to_vote.values() if vote)
+        if ja_votes / len(self.players) > 0.5:
+            await self._broadcast(
+                f"{chancellor_candidate} has been elected as chancellor"
+            )
+            return chancellor_candidate
+        await self._broadcast(f"{chancellor_candidate} did not get a majority vote")
+        return None
 
     def add_player(self, user: discord.User) -> bool:
         """
@@ -179,3 +224,15 @@ class Game:
             )
         self._randomise_roles()
         await self._show_roles()
+        while self.election_tracker < 3:
+            self.chancellor = await self._hold_election()
+            if self.chancellor is None:
+                self.election_tracker += 1
+                self._broadcast(
+                    "The election tracker has been advanced by 1, "
+                    f"and is now at {self.election_tracker}"
+                )
+            else:
+                break
+        else:
+            pass
