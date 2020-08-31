@@ -123,7 +123,7 @@ class Game:
         candidate_idx = await ut.get_int_from_user(
             self.bot,
             pres_candidate,
-            accept=range(1, len(candidates + 1)),
+            accept=range(1, len(candidates) + 1),
             no_accept_msg="The number you selected does not correspond to a candidate",
         )
 
