@@ -11,8 +11,8 @@ from typing import Iterable, Optional
 
 import discord
 
-THUMBS_UP = "👍"
-THUMBS_DOWN = "👎"
+YES = "✅"
+NO = "❌"
 
 
 async def get_int_from_user(
@@ -44,17 +44,17 @@ async def get_vote_from_user(
     no_text: str = "No",
 ):
     def check(reaction, check_user):
-        return str(reaction.emoji) in (THUMBS_UP, THUMBS_DOWN) and check_user == user
+        return str(reaction.emoji) in (YES, NO) and check_user == user
 
     if message is not None:
         await user.send(message)
     msg = await user.send(
-        f"React with {THUMBS_UP} for {yes_text} or {THUMBS_DOWN} for {no_text}"
+        f"React with {YES} for {yes_text} or {NO} for {no_text}"
     )
-    await msg.add_reaction(THUMBS_UP)
-    await msg.add_reaction(THUMBS_DOWN)
+    await msg.add_reaction(YES)
+    await msg.add_reaction(NO)
 
     reaction, _ = await client.wait_for("reaction_add", check=check)
-    if str(reaction.emoji) == THUMBS_UP:
+    if str(reaction.emoji) == YES:
         return True
     return False
