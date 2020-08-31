@@ -95,10 +95,11 @@ class Game:
             )
             hitler = self._get_players(lambda _, role: role == "hitler")[0]
             await user.send(f"{hitler} is **Hitler**")
-            await user.send(
-                "The other **fascists** are: "
-                + ", ".join(str(fascist) for fascist in other_fascists)
-            )
+            if other_fascists:
+                await user.send(
+                    "The other **fascists** are: "
+                    + ", ".join(str(fascist) for fascist in other_fascists)
+                )
 
     async def _pres_choose_chancellor(
         self, pres_candidate: discord.User = None
