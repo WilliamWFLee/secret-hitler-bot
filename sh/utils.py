@@ -54,7 +54,7 @@ async def get_vote_from_user(
     await msg.add_reaction(THUMBS_UP)
     await msg.add_reaction(THUMBS_DOWN)
 
-    reaction, _ = client.wait_for("reaction_add", check=check)
+    reaction, _ = await client.wait_for("reaction_add", check=check)
     if str(reaction.emoji) == THUMBS_UP:
         return True
     return False
