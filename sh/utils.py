@@ -16,7 +16,6 @@ THUMBS_DOWN = "👎"
 
 
 async def get_int_from_user(
-    self,
     client: discord.Client,
     user: discord.User,
     *,
