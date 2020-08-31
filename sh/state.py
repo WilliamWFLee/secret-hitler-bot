@@ -43,10 +43,22 @@ class GameState:
         self.president = None
         self.election_tracker = 0
         self.policies = []
+        self.discarded_policies = []
         self.policy_counts = {
             "fascist": 0,
             "liberal": 0,
         }
+
+    @property
+    def deck_distribution(self):
+        counts = {
+            "fascist": 0,
+            "liberal": 0,
+        }
+        for policy_type in self.policies:
+            counts[policy] += 1
+
+        return counts
 
     def get_players(
         self, predicate: Callable[[discord.User, str], bool] = lambda user, role: True
@@ -158,6 +170,7 @@ class GameState:
         # Choose Hitler
         fascists = self.get_players(lambda _, role: role == "fascist")
         hitler = random.choice(fascists)
+
         self.players[hitler] = "hitler"
 
     def populate_policies(self):
@@ -172,6 +185,14 @@ class GameState:
         Shuffles the policy deck
         """
         random.shuffle(self.policies)
+
+    def reshuffle_policies_with_discarded(self):
+        """
+        Adds the discarded policies to the policy deck, and shuffles them
+        """
+        self.policies.extend(self.discarded_policies)
+        self.discarded_policies = []
+        self.shuffle_policies()
 
     def enact_policy(self, policy_type: str):
         """

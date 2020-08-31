@@ -161,6 +161,46 @@ class Game:
         )
         return False
 
+    async def _reset_election_tracker(self):
+        self.state.reset_election_tracker()
+        await self._broadcast("The election tracker has been reset to 0")
+
+    async def _reveal_deck_distribution(self):
+        distribution = self.state.deck_distribution
+        await self._broadcast(
+            "There are "
+            + " and ".join(
+                f"{count} {policy_type}" for policy_type, count in distribution.items()
+            )
+            + " policies in the deck"
+        )
+
+    async def _check_policy_deck(self):
+        # Checks whether there are fewer than three policies left
+        # adds the discard pile to the deck as appropriate
+        if len(self.state.policies) < 3:
+            self.state.reshuffle_policies_with_discarded()
+            await self._broadcast(
+                "Discarded policies have been added to the policy deck"
+            )
+            await self._broadcast("The deck has been reshuffled")
+            await self._broadcast("There are now ")
+
+    async def _chaos(self):
+        await self._broadcast(
+            "You've failed to elect a government three times in a row"
+        )
+        await self._broadcast("The country has been thrown into chaos!")
+        await self._broadcast(
+            "The policy from the top of the deck "
+            "will be revealed and enacted immediately."
+        )
+        await self._reveal_top_policy()
+        self.state.reset_term_limits()
+        await self._broadcast("Term limits for chancellor have been reset")
+        await self._reset_election_tracker()
+        await self._reveal_deck_distribution()
+
     async def _play_election_round(self):
         while True:
             success = await self._hold_election()
@@ -171,19 +211,7 @@ class Game:
                     f"and is now at **{self.state.election_tracker}**"
                 )
                 if not self.state.populace_content():
-                    await self._broadcast(
-                        "You've failed to elect a government three times in a row"
-                    )
-                    await self._broadcast("The country has been thrown into chaos!")
-                    await self._broadcast(
-                        "The policy from the top of the deck "
-                        "will be revealed and enacted immediately."
-                    )
-                    await self._reveal_top_policy()
-                    self.state.reset_election_tracker()
-                    await self._broadcast("The election tracker has been reset to 0")
-                    self.state.reset_term_limits()
-                    await self._broadcast("Term limits for chancellor have been reset")
+                    await self._chaos()
             else:
                 break
 
@@ -235,6 +263,7 @@ class Game:
         self.state.populate_policies()
         self.state.shuffle_policies()
         await self._show_roles()
+        await self._reveal_deck_distribution()
         running = True
         while running:
             game_continue = await self._play_round()
