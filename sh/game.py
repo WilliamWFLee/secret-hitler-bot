@@ -17,7 +17,8 @@ from discord.ext import commands
 from . import utils as ut
 
 MIN_PLAYERS = 5
-
+FASCIST_POLICY_COUNT = 11
+LIBERAL_POLICY_COUNT = 6
 
 PLAYERS_TO_LIB_FASC_COUNT = {
     5: (3, 2),
@@ -50,6 +51,7 @@ class Game:
         self.last_chancellor = None
         self.last_president = None
         self.election_tracker = 0
+        self.policies = []
 
     async def _broadcast(self, *args, **kwargs):
         await asyncio.gather(user.send(*args, **kwargs) for user in self.players)
@@ -71,6 +73,13 @@ class Game:
         fascists = self._get_players(lambda _, role: role == "fascist")
         hitler = random.choice(fascists)
         self.players[hitler] = "hitler"
+
+    def _populate_policies(self):
+        self.policies = ["Fascist" for _ in range(FASCIST_POLICY_COUNT)]
+        self.policies.extend("Liberal" for _ in range(LIBERAL_POLICY_COUNT))
+
+    def _shuffle_policies(self):
+        random.shuffle(self.policies)
 
     async def _show_role(self, user: discord.User, role: str):
         if role == "hitler":
@@ -223,6 +232,8 @@ class Game:
                 f"{MIN_PLAYERS - len(self.players)} more player(s) required"
             )
         self._randomise_roles()
+        self._populate_policies()
+        self._shuffle_policies()
         await self._show_roles()
         while self.election_tracker < 3:
             self.chancellor = await self._hold_election()
