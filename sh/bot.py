@@ -16,13 +16,8 @@ __all__ = ["run"]
 
 bot = commands.Bot(command_prefix="sh-", case_insensitive=True)
 
-cog_path = os.path.join(os.path.dirname(__file__), "cogs")
-print("Loading game cogs...")
-if os.path.exists(cog_path):
-    for file in os.listdir(cog_path):
-        if file.endswith(".py"):
-            bot.load_extension("sh.cogs." + file[:-3])
-            print(f"Loaded {file[:-3]}")
+print("Loading Secret Hitler extension...")
+bot.load_extension("sh")
 
 
 @bot.event

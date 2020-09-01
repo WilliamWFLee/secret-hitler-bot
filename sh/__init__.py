@@ -14,3 +14,4 @@ __version__ = "1.0.0dev1"
 __author__ = "William Lee"
 
 from . import bot  # noqa: F401
+from .setup import setup  # noqa: F401

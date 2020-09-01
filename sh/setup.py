@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-sh.cogs.setup
+sh.setup
 
 Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 """
@@ -12,7 +12,7 @@ import asyncio
 import discord
 from discord.ext import commands
 
-from ..game import Game
+from .game import Game
 
 
 class SetupCog(commands.Cog, name="Setup"):
