@@ -8,7 +8,8 @@ Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 """
 
 import asyncio
-from typing import List, Optional, Tuple
+import itertools
+from typing import List, Optional, Tuple, Iterable
 
 import discord
 from discord.ext import commands
@@ -270,6 +271,60 @@ class Game:
 
         return policies[chosen_index - 1]
 
+    async def _get_claim(self, user: discord.User, *, repeat: int) -> Iterable[str]:
+        claims = list(
+            itertools.combinations_with_replacement(
+                self.state.policy_counts.keys(), r=repeat
+            )
+        )
+        claims_list = "\n".join(
+            f"{i + 1}: {', '.join(policy.title() for policy in policies)}"
+            for i, policies in enumerate(claims)
+        )
+
+        claim_index = await ut.get_int_choice_from_user(
+            self.bot,
+            user,
+            message=(
+                f"{claims_list}\n"
+                "Choose the number of the combination you wish to claim you received"
+            ),
+            min_=1,
+            max_=repeat,
+        )
+        return claims[claim_index - 1]
+
+    async def _get_wish_to_make_claim(self, user: discord.User):
+        return await ut.get_vote_from_user(
+            self.bot, user, message="Do you wish to claim what policies you received?"
+        )
+
+    async def _broadcast_claim(
+        self, claiming_user: discord.User, policies: Iterable[str]
+    ):
+        await self._broadcast(
+            f"{claiming_user} claims to have received **{{}}**".format(
+                ", ".join(policy.title() for policy in policies)
+            )
+        )
+
+    async def _pres_claim(self):
+        wants_claim = await self._get_wish_to_make_claim(self.state.president)
+        if not wants_claim:
+            return
+        claim = await self._get_claim(self.state.president, repeat=3)
+        await self._broadcast_claim(self.state.president, claim)
+
+    async def _chancellor_claim(self):
+        wants_claim = await self._get_wish_to_make_claim(self.state.chancellor)
+        if not wants_claim:
+            return
+        claim = await self._get_claim(self.state.chancellor, repeat=2)
+        await self._broadcast_claim(self.state.chancellor, claim)
+
+    async def _pres_chancellor_claims(self):
+        await asyncio.gather(self._pres_claim(), self._chancellor_claim())
+
     async def _play_legislative_session(self) -> bool:
         await self._broadcast("**LEGISLATIVE SESSION**")
         await self._broadcast(
@@ -292,6 +347,8 @@ class Game:
                 )
                 self._declare_win(policy_type)
                 return False
+
+        await self._pres_chancellor_claims()
         return True
 
     async def _play_round(self) -> bool:
