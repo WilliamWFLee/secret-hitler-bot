@@ -138,6 +138,7 @@ class GameState:
         :return: The list of chancellor candidates
         :rtype: List[discord.User]
         """
+
         def pres_candidate_check(m):
             return m.author == pres_candidate
 
@@ -184,7 +185,11 @@ class GameState:
         """
         Populates the policy deck with the set number of policies
         """
-        self.policies = [policy_type for policy_type, count in POLICY_COUNT.items() for _ in range(count)]
+        self.policies = [
+            policy_type
+            for policy_type, count in POLICY_COUNT.items()
+            for _ in range(count)
+        ]
 
     def shuffle_policies(self):
         """
