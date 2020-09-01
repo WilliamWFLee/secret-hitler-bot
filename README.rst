@@ -54,7 +54,7 @@ Extension
 
 The directory ``sh`` can be added to existing Discord bots using discord.py's extension feature.
 
-Simply move the directory in an appropriate place, and load the extension using the bot's ``load_extension`` command.
+Simply move the directory into an appropriate place, and load the extension using the bot's ``load_extension`` command.
 
 For example, if your bot is running as a single file called ``main.py`` in the root directory,
 and you have put the directory ``sh`` in the same directory as the bot's main file, then you can load the extension by doing
