@@ -8,7 +8,7 @@ Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 """
 
 import asyncio
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import discord
 from discord.ext import commands
@@ -44,6 +44,10 @@ class Game:
 
     async def _reveal_top_policy(self):
         policy_type = self.state.enact_top_policy()
+        await self._show_enacted_policy(policy_type)
+
+    async def _enact_policy(self, policy_type: str):
+        self.state.enact_policy(policy_type)
         await self._show_enacted_policy(policy_type)
 
     async def _show_enacted_policy(self, policy_type: str):
@@ -228,10 +232,75 @@ class Game:
             return False
         return True
 
+    async def _pres_choose_policies(self) -> List[str]:
+        policies = self.state.get_top_three_policies()
+        policies_list = "\n".join(
+            f"{i + 1}: **{policy.title()}**" for i, policy in enumerate(policies)
+        )
+        discard_index = await ut.get_int_choice_from_user(
+            self.bot,
+            self.state.president,
+            message=(
+                "You must choose a policy to discard:\n"
+                f"{policies_list}\n"
+                "React with the number of the policy you want to **discard**"
+            ),
+            min_=1,
+            max_=3,
+        )
+
+        self.state.add_to_discard(policies.pop(discard_index - 1))
+        return policies
+
+    async def _chancellor_choose_policy(self, policies: List[str]) -> str:
+        policies_list = "\n".join(
+            f"{i + 1}: **{policy.title()}**" for i, policy in enumerate(policies)
+        )
+        chosen_index = await ut.get_int_choice_from_user(
+            self.bot,
+            self.state.chancellor,
+            message=(
+                "You must choose a policy to enact:\n"
+                f"{policies_list}\n"
+                "React with the number of the policy you want to **enact**"
+            ),
+            min_=1,
+            max_=2,
+        )
+
+        return policies[chosen_index - 1]
+
+    async def _play_legislative_session(self) -> bool:
+        await self._broadcast("**LEGISLATIVE SESSION**")
+        await self._broadcast(
+            "The president will now receive the three policies at the top of the deck "
+            "and choose the one they want to discard"
+        )
+        remaining_policies = await self._pres_choose_policies()
+        await self._broadcast(
+            "The president has discarded a policy\n"
+            "The chancellor will now choose one of the remaining two policies to enact"
+        )
+        chosen_policy = await self._chancellor_choose_policy(remaining_policies)
+        await self._enact_policy(chosen_policy)
+
+        for policy_type in self.state.policy_counts:
+            if self.state.target_reached(policy_type):
+                self._broadcast(
+                    f"The **{policy_type} have reached "
+                    "their target number of policies to enact"
+                )
+                self._declare_win(policy_type)
+                return False
+        return True
+
     async def _play_round(self) -> bool:
-        game_on = await self._play_election_round()
-        if not game_on:
-            return False
+        rounds = (self._play_election_round, self._play_legislative_session)
+        for round_ in rounds:
+            game_on = await round_()
+            if not game_on:
+                return False
+        return True
 
     async def _reveal_roles(self):
         await self._broadcast("Everyone's roles:\n")

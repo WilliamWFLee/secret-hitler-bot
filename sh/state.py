@@ -21,8 +21,15 @@ PLAYERS_TO_LIB_FASC_COUNT = {
     10: (6, 4),
 }
 
-FASCIST_POLICY_COUNT = 11
-LIBERAL_POLICY_COUNT = 6
+POLICY_COUNT = {
+    "fascist": 11,
+    "liberal": 6,
+}
+
+POLICY_TARGET = {
+    "fascist": 6,
+    "liberal": 5,
+}
 
 
 class GameState:
@@ -177,8 +184,7 @@ class GameState:
         """
         Populates the policy deck with the set number of policies
         """
-        self.policies = ["fascist" for _ in range(FASCIST_POLICY_COUNT)]
-        self.policies.extend("liberal" for _ in range(LIBERAL_POLICY_COUNT))
+        self.policies = [policy_type for policy_type, count in POLICY_COUNT.items() for _ in range(count)]
 
     def shuffle_policies(self):
         """
@@ -246,3 +252,34 @@ class GameState:
         :rtype: bool
         """
         return self.players[self.chancellor] == "hitler"
+
+    def get_top_three_policies(self) -> List[str]:
+        """
+        Removes the three policies at the top of the policy deck,
+        and returns them
+
+        :return: The policies
+        :rtype: List[str]
+        """
+        self.policies, policies = self.policies[:-3], self.policies[-3:]
+        return policies
+
+    def add_to_discard(self, policy_type: str):
+        """
+        Adds the specified policy type to the discard pile
+
+        :param policy_type: The policy type to add
+        :type policy_type: str
+        """
+        self.discarded_policies.append(policy_type)
+
+    def target_reached(self, policy_type) -> bool:
+        """
+        Returns whether the target number of policies has been reached
+
+        :param policy_type: The policy type to check
+        :type policy_type: stsr
+        :return: Whether the target has been reached
+        :rtype: bool
+        """
+        return self.policy_counts[policy_type] >= POLICY_TARGET[policy_type]
