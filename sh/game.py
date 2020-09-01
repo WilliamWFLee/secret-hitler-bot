@@ -355,6 +355,7 @@ class Game:
                 return False
 
         await self._pres_chancellor_claims()
+        await self._check_policy_deck()
         return True
 
     async def _play_round(self) -> bool:
