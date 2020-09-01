@@ -290,7 +290,7 @@ class Game:
                 "Choose the number of the combination you wish to claim you received"
             ),
             min_=1,
-            max_=repeat,
+            max_=len(claims),
         )
         return claims[claim_index - 1]
 
