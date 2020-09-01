@@ -164,7 +164,7 @@ class GameState:
 
     def randomise_roles(self):
         """
-        Randomises the players of players
+        Randomises the role of players
         """
         # Get number of liberals and fascists for player count
         num_libs, num_fascs = PLAYERS_TO_LIB_FASC_COUNT[len(self.players)]
