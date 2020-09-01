@@ -83,6 +83,10 @@ class GameState:
         self.players = {}
         self.reset()
 
+    @property
+    def alive_players(self):
+        return {k: v for k, v in self.players.items() if v != "dead"}
+
     def reset(self):
         """
         Resets state attributes back to default
@@ -188,7 +192,7 @@ class GameState:
             predicate=(
                 lambda user, _: (
                     user != self.chancellor
-                    if len(self.players) <= 6
+                    if len(self.alive_players) <= 6
                     else user not in (self.president, self.chancellor)
                 )
                 and user != pres_candidate

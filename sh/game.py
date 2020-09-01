@@ -121,7 +121,7 @@ class Game:
                 yes_text="Ja!",
                 no_text="Nein",
             )
-            for user in self.state.players
+            for user in self.state.alive_players
         }
         # Gathers the votes, order is preserved
         votes = await asyncio.gather(*user_to_aw.values())
@@ -157,7 +157,7 @@ class Game:
         )
 
         ja_votes = sum(1 for vote in user_to_vote.values() if vote)
-        if ja_votes / len(self.state.players) > 0.5:
+        if ja_votes / len(self.state.alive_players) > 0.5:
             await self._broadcast(
                 f"**{pres_candidate}** and **{chancellor_candidate}** "
                 "have been elected as **president** and **chancellor**"
@@ -381,7 +381,7 @@ class Game:
                 "policy_peek": self._policy_peek,
             }
             result = await executive_action_to_coro[executive_action]()
-            if result is False:
+            if result is not None and not result:
                 return False
         return True
 
