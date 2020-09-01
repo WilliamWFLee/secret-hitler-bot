@@ -143,7 +143,7 @@ class GameState:
 
         def fascist_predicate(user, role):
             return role == "fascist" and (
-                user in exclude if exclude is not None else True
+                user not in exclude if exclude is not None else True
             )
 
         return self.get_players(fascist_predicate)
