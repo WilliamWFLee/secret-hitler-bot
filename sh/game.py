@@ -426,6 +426,20 @@ class Game:
                 f"is a {claim_membership}"
             )
 
+    async def _special_election(self):
+        await self._broadcast("The president is calling a special election")
+        next_pres_candidate = await ut.get_choice_from_user(
+            self.bot,
+            self.state.president,
+            message="Choose the next presidential candidate",
+            choices=self.state.get_alive_players(exclude=(self.state.president,)),
+        )
+        await self._broadcast(
+            f"The president has chosen {next_pres_candidate} "
+            "to be the next presidential candidate"
+        )
+        self.state.next_presidential_candidate = next_pres_candidate
+
     async def _play_executive_action(self, policy_enacted: str) -> bool:
         if policy_enacted != "fascist":
             return True
@@ -436,6 +450,7 @@ class Game:
                 "policy_peek": self._policy_peek,
                 "execute": self._execution,
                 "loyalty": self._investigate_loyalty,
+                "special_election": self._special_election,
             }
             result = await executive_action_to_coro[executive_action]()
             if result is not None and not result:

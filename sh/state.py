@@ -50,6 +50,7 @@ EXECUTIVE_ACTION = {
     for k, v in {
         (5, 6): NoneDefaultDict(
             {
+                1: "special_election",
                 3: "policy_peek",
                 4: "execute",
                 5: "execute",
@@ -92,6 +93,7 @@ class GameState:
         self.pres_candidate_index = 0
         self.chancellor = None
         self.president = None
+        self.next_presidential_candidate = None
         self.election_tracker = 0
         self.policy_deck = []
         self.discarded_policies = []
@@ -185,6 +187,11 @@ class GameState:
         :return: The next presidential candidate
         :rtype: discord.User
         """
+        if self.next_presidential_candidate is not None:
+            try:
+                return self.next_presidential_candidate
+            finally:
+                self.next_presidential_candidate = None
         alive_players = self.get_alive_players()
         self.pres_candidate_index %= len(alive_players)
         pres_candidate = list(alive_players)[self.pres_candidate_index]
