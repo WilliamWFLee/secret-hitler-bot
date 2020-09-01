@@ -232,7 +232,8 @@ class Game:
             choices=policies,
         )
 
-        self.state.add_to_discard(policies.remove(discard_policy))
+        policies.remove(discard_policy)
+        self.state.add_to_discard(discard_policy)
         return policies
 
     async def _chancellor_choose_policy(
