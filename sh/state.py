@@ -211,17 +211,16 @@ class GameState:
         :rtype: List[discord.User]
         """
 
-        def pres_candidate_check(m):
-            return m.author == pres_candidate
-
         candidates = self.get_players(
             predicate=(
                 lambda user, _: (
-                    user != self.chancellor
-                    if len(self.get_alive_players()) <= 6
-                    else user not in (self.president, self.chancellor)
+                    (
+                        user != self.chancellor
+                        if len(self.get_alive_players()) <= 6
+                        else user not in (self.president, self.chancellor)
+                    )
+                    and user != pres_candidate
                 )
-                and user != pres_candidate
             )
         )
 
