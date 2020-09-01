@@ -13,5 +13,4 @@ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 __version__ = "1.0.0dev1"
 __author__ = "William Lee"
 
-from . import bot  # noqa: F401
 from .cog import setup  # noqa: F401
