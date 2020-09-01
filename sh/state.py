@@ -83,10 +83,6 @@ class GameState:
         self.players = {}
         self.reset()
 
-    @property
-    def alive_players(self):
-        return {k: v for k, v in self.players.items() if v != "dead"}
-
     def reset(self):
         """
         Resets state attributes back to default
@@ -101,6 +97,7 @@ class GameState:
             "fascist": 0,
             "liberal": 0,
         }
+        self.dead_players = []
 
     @property
     def deck_distribution(self):
@@ -129,6 +126,24 @@ class GameState:
         :rtype: List[discord.User]
         """
         return [user for user, role in self.players.items() if predicate(user, role)]
+
+    def get_alive_players(
+        self, exclude: Optional[Iterable[discord.User]] = None
+    ) -> List[discord.User]:
+        """
+        Retrieves a list of alive players.
+        You can optionally exclude players from the list
+
+        :return: The list of alive players
+        :rtype: List[discord.User]
+        """
+
+        def alive_predicate(user, _):
+            return user not in self.dead_players and (
+                user not in exclude if exclude is not None else True
+            )
+
+        return self.get_players(predicate=alive_predicate)
 
     def get_fascist_players(
         self, exclude: Optional[Iterable[discord.User]] = None
@@ -168,7 +183,9 @@ class GameState:
         :return: The next presidential candidate
         :rtype: discord.User
         """
-        pres_candidate = list(self.players)[self.pres_candidate_index]
+        alive_players = self.get_alive_players()
+        self.pres_candidate_index %= len(alive_players)
+        pres_candidate = list(alive_players)[self.pres_candidate_index]
         self.pres_candidate_index += 1
 
         return pres_candidate
@@ -192,7 +209,7 @@ class GameState:
             predicate=(
                 lambda user, _: (
                     user != self.chancellor
-                    if len(self.alive_players) <= 6
+                    if len(self.get_alive_players()) <= 6
                     else user not in (self.president, self.chancellor)
                 )
                 and user != pres_candidate
@@ -200,6 +217,27 @@ class GameState:
         )
 
         return candidates
+
+    def kill_player(self, player: discord.User):
+        """
+        Kills a player
+
+        :param player: The player to kill
+        :type player: discord.User
+        """
+        self.dead_players.append(player)
+
+    def hitler_dead(self) -> bool:
+        """
+        Whether Hitler is dead or not
+
+        :return: Whether Hitler is dead
+        :rtype: bool
+        """
+        hitler = self.get_hitler()
+        if hitler in self.dead_players:
+            return True
+        return False
 
     def reset_term_limits(self):
         """

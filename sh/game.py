@@ -121,7 +121,7 @@ class Game:
                 yes_text="Ja!",
                 no_text="Nein",
             )
-            for user in self.state.alive_players
+            for user in self.state.get_alive_players()
         }
         # Gathers the votes, order is preserved
         votes = await asyncio.gather(*user_to_aw.values())
@@ -157,7 +157,7 @@ class Game:
         )
 
         ja_votes = sum(1 for vote in user_to_vote.values() if vote)
-        if ja_votes / len(self.state.alive_players) > 0.5:
+        if ja_votes / len(self.state.get_alive_players()) > 0.5:
             await self._broadcast(
                 f"**{pres_candidate}** and **{chancellor_candidate}** "
                 "have been elected as **president** and **chancellor**"
@@ -371,6 +371,36 @@ class Game:
         )
         await self._pres_claim()
 
+    async def _execution(self) -> bool:
+        await self._broadcast("The president must now choose a player to kill")
+        alive_players = self.state.get_alive_players(exclude=(self.state.president,))
+        player_list = "\n".join(
+            f"{i + 1}: {player}" for i, player in enumerate(alive_players)
+        )
+        player_index = await ut.get_int_choice_from_user(
+            self.bot,
+            self.state.president,
+            message=(
+                "Choose the player you want to kill\n"
+                f"{player_list}\n"
+                "React with the number of the player to kill"
+            ),
+            min_=1,
+            max_=len(alive_players),
+        )
+
+        selected_player = alive_players[player_index - 1]
+        await self._broadcast(
+            f"{self.state.president} formally executes {selected_player}"
+        )
+        self.state.kill_player(selected_player)
+        await self._broadcast(f"{selected_player} is now dead")
+        if self.state.hitler_dead():
+            await self._broadcast("Hitler has been killed!")
+            await self._declare_win("liberal")
+            return False
+        return True
+
     async def _play_executive_action(self, policy_enacted: str) -> bool:
         if policy_enacted != "fascist":
             return True
@@ -379,6 +409,7 @@ class Game:
             await self._broadcast("**EXECUTIVE ACTION**")
             executive_action_to_coro = {
                 "policy_peek": self._policy_peek,
+                "execute": self._execution,
             }
             result = await executive_action_to_coro[executive_action]()
             if result is not None and not result:
