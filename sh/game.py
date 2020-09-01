@@ -154,8 +154,8 @@ class Game:
         ja_votes = sum(1 for vote in user_to_vote.values() if vote)
         if ja_votes / len(self.state.players) > 0.5:
             await self._broadcast(
-                f"**{pres_candidate}** has been elected as **president**\n"
-                f"**{chancellor_candidate}** has been elected as **chancellor**"
+                f"**{pres_candidate}** and **{chancellor_candidate}** "
+                "have been elected as **president** and **chancellor**"
             )
             self.state.president = pres_candidate
             self.state.chancellor = chancellor_candidate
