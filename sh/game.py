@@ -296,7 +296,13 @@ class Game:
 
     async def _get_wish_to_make_claim(self, user: discord.User):
         return await ut.get_vote_from_user(
-            self.bot, user, message="Do you wish to claim what policies you received?"
+            self.bot,
+            user,
+            message=(
+                "Do you wish to claim what policies you received?\n"
+                "If you're communicating with other players via voice, "
+                "then you may select 'No'"
+            ),
         )
 
     async def _broadcast_claim(
