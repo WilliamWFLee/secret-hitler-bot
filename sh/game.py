@@ -83,15 +83,17 @@ class Game:
         cdtes_list = "\n".join(
             f"{i + 1}: {candidate}" for i, candidate in enumerate(candidates)
         )
-        await pres_candidate.send("Choose someone to be the next chancellor candidate:")
-        await pres_candidate.send(cdtes_list)
-        await pres_candidate.send("Send the number of the player to nominate:")
 
-        candidate_idx = await ut.get_int_from_user(
+        candidate_idx = await ut.get_int_choice_from_user(
             self.bot,
             pres_candidate,
-            accept=range(1, len(candidates) + 1),
-            no_accept_msg="The number you selected does not correspond to a candidate",
+            message=(
+                "Choose someone to be the next chancellor candidate:\n"
+                f"{cdtes_list}\n"
+                "React with the number of the player to nominate"
+            ),
+            min_=1,
+            max_=len(candidates),
         )
 
         return candidates[candidate_idx - 1]
