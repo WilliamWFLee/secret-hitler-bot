@@ -400,9 +400,7 @@ class Game:
             self.bot,
             self.state.president,
             message="Choose a player to investigate",
-            choices=self.state.get_players(
-                lambda user, _: user != self.state.president
-            ),
+            choices=self.state.get_alive_players(exclude=(self.state.president,)),
         )
         await self._broadcast(
             f"The president has chosen to investigate **{player_to_investigate}**"
