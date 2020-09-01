@@ -235,14 +235,19 @@ class Game:
         self.state.add_to_discard(policies.remove(discard_policy))
         return policies
 
-    async def _chancellor_choose_policy(self, policies: List[str]) -> str:
+    async def _chancellor_choose_policy(
+        self, policies: List[str], can_veto: bool = False
+    ) -> Optional[str]:
+        if can_veto:
+            policies = policies.copy() + ["I wish to veto this agenda"]
         chosen_policy = await ut.get_choice_from_user(
             self.bot,
             self.state.chancellor,
             message="You must choose a policy to enact",
             choices=policies,
         )
-
+        if can_veto and chosen_policy == "I wish to veto this agenda":
+            return None
         return chosen_policy
 
     async def _get_claim(self, user: discord.User, *, repeat: int) -> Iterable[str]:
@@ -299,8 +304,30 @@ class Game:
     async def _pres_chancellor_claims(self):
         await asyncio.gather(self._pres_claim(), self._chancellor_claim())
 
+    async def _begin_veto(self, remaining_policies: List[str]) -> bool:
+        await self._broadcast("The chancellor wishes to veto the current agenda")
+        await self._broadcast(
+            "The president will now choose whether or not they consent to the veto"
+        )
+        pres_agrees = await ut.get_vote_from_user(
+            self.bot, self.state.president, message="Do you agree to veto this agenda?"
+        )
+        if pres_agrees:
+            await self._broadcast("The president agrees to veto the agenda")
+            for policy in remaining_policies:
+                self.state.add_to_discard(policy)
+        else:
+            await self._broadcast("The president does not agree to veto the agenda")
+            await self._broadcast("The chancellor will enact a policy as normal")
+            chosen_policy = await self._chancellor_choose_policy(remaining_policies)
+            await self._enact_policy(chosen_policy)
+
     async def _play_legislative_session(self) -> Optional[str]:
         await self._broadcast("**LEGISLATIVE SESSION**")
+        if self.state.can_veto():
+            await self._broadcast(
+                "The executive branch have the power to veto the agenda in this session"
+            )
         await self._broadcast(
             "The president will now receive the three policies at the top of the deck "
             "and choose the one they want to discard"
@@ -310,8 +337,13 @@ class Game:
             "The president has discarded a policy\n"
             "The chancellor will now choose one of the remaining two policies to enact"
         )
-        chosen_policy = await self._chancellor_choose_policy(remaining_policies)
-        await self._enact_policy(chosen_policy)
+        chosen_policy = await self._chancellor_choose_policy(
+            remaining_policies, can_veto=self.state.can_veto()
+        )
+        if chosen_policy is None:
+            await self._begin_veto(remaining_policies)
+        else:
+            await self._enact_policy(chosen_policy)
 
         for policy_type in self.state.policy_counts:
             if self.state.target_reached(policy_type):

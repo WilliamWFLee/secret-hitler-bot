@@ -32,6 +32,8 @@ POLICY_TARGET = {
     "liberal": 5,
 }
 
+VETO_LIMIT = 5
+
 
 def NoneDefaultDict(*args, **kwargs) -> defaultdict:
     """
@@ -390,3 +392,12 @@ class GameState:
         :return: The executive action, or None if no action is applicable
         """
         return EXECUTIVE_ACTION[len(self.players)][self.policy_counts["fascist"]]
+
+    def can_veto(self) -> bool:
+        """
+        Returns whether or not the current government is able to veto agendas
+
+        :return: Whether veto power is enabled
+        :rtype: bool
+        """
+        return self.policy_counts["fascist"] >= VETO_LIMIT
