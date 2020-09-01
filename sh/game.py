@@ -38,6 +38,13 @@ class Game:
         self.guild = guild
         self.state = GameState()
 
+    def with_section_divider(coro):  # noqa
+        async def inner(self, *args, **kwargs):
+            await self._broadcast(25 * "-")
+            return await coro(self, *args, **kwargs)
+
+        return inner
+
     async def _broadcast(self, *args, **kwargs):
         await asyncio.gather(
             *(user.send(*args, **kwargs) for user in self.state.players)
@@ -201,6 +208,7 @@ class Game:
         await self._reset_election_tracker()
         await self._reveal_deck_distribution()
 
+    @with_section_divider
     async def _play_election_round(self) -> bool:
         while True:
             success = await self._hold_election()
@@ -323,6 +331,7 @@ class Game:
             chosen_policy = await self._chancellor_choose_policy(remaining_policies)
             await self._enact_policy(chosen_policy)
 
+    @with_section_divider
     async def _play_legislative_session(self) -> Optional[str]:
         await self._broadcast("**LEGISLATIVE SESSION**")
         if self.state.can_veto():
@@ -440,6 +449,7 @@ class Game:
         )
         self.state.next_presidential_candidate = next_pres_candidate
 
+    @with_section_divider
     async def _play_executive_action(self, policy_enacted: str) -> bool:
         if policy_enacted != "fascist":
             return True
