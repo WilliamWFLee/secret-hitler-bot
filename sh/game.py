@@ -343,8 +343,8 @@ class Game:
             "and choose the one they want to discard"
         )
         remaining_policies = await self._pres_choose_policies()
+        await self._broadcast("The president has discarded a policy")
         await self._broadcast(
-            "The president has discarded a policy\n"
             "The chancellor will now choose one of the remaining two policies to enact"
         )
         chosen_policy = await self._chancellor_choose_policy(
