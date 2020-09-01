@@ -401,3 +401,13 @@ class GameState:
         :rtype: bool
         """
         return self.policy_counts["fascist"] >= VETO_LIMIT
+
+    def get_party_membership(self, player: discord.User) -> str:
+        """
+        Returns the party membership of a player
+
+        :return: The party membership
+        :rtype: str
+        """
+
+        return "liberal" if self.players[player] == "liberal" else "fascist"

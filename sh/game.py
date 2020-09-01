@@ -392,6 +392,42 @@ class Game:
             return False
         return True
 
+    async def _investigate_loyalty(self):
+        await self._broadcast(
+            "The president has the power to investigate the loyalty of one person"
+        )
+        player_to_investigate = await ut.get_choice_from_user(
+            self.bot,
+            self.state.president,
+            message="Choose a player to investigate",
+            choices=self.state.get_players(
+                lambda user, _: user != self.state.president
+            ),
+        )
+        await self._broadcast(
+            f"The president has chosen to investigate **{player_to_investigate}**"
+        )
+        membership = self.state.get_party_membership(player_to_investigate)
+        await self.state.president.send(
+            f"{player_to_investigate} is a **{membership}**"
+        )
+        wants_to_share = await ut.get_vote_from_user(
+            self.bot,
+            self.state.president,
+            message="Do you want to share your findings?",
+        )
+        if wants_to_share:
+            claim_membership = await ut.get_choice_from_user(
+                self.bot,
+                self.state.president,
+                message="Choose what you want to claim your findings are",
+                choices=("fascist", "liberal"),
+            )
+            await self._broadcast(
+                f"{self.state.president} claims that {player_to_investigate} "
+                f"is a {claim_membership}"
+            )
+
     async def _play_executive_action(self, policy_enacted: str) -> bool:
         if policy_enacted != "fascist":
             return True
@@ -401,6 +437,7 @@ class Game:
             executive_action_to_coro = {
                 "policy_peek": self._policy_peek,
                 "execute": self._execution,
+                "loyalty": self._investigate_loyalty,
             }
             result = await executive_action_to_coro[executive_action]()
             if result is not None and not result:
