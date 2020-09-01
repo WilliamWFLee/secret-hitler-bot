@@ -188,7 +188,7 @@ class Game:
     async def _check_policy_deck(self):
         # Checks whether there are fewer than three policies left
         # adds the discard pile to the deck as appropriate
-        if len(self.state.policies) < 3:
+        if len(self.state.policy_deck) < 3:
             self.state.reshuffle_policies_with_discarded()
             await self._broadcast(
                 "Discarded policies have been added to the policy deck"

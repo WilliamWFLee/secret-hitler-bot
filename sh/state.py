@@ -49,7 +49,7 @@ class GameState:
         self.chancellor = None
         self.president = None
         self.election_tracker = 0
-        self.policies = []
+        self.policy_deck = []
         self.discarded_policies = []
         self.policy_counts = {
             "fascist": 0,
@@ -62,7 +62,7 @@ class GameState:
             "fascist": 0,
             "liberal": 0,
         }
-        for policy_type in self.policies:
+        for policy_type in self.policy_deck:
             counts[policy_type] += 1
 
         return counts
@@ -185,7 +185,7 @@ class GameState:
         """
         Populates the policy deck with the set number of policies
         """
-        self.policies = [
+        self.policy_deck = [
             policy_type
             for policy_type, count in POLICY_COUNT.items()
             for _ in range(count)
@@ -195,13 +195,13 @@ class GameState:
         """
         Shuffles the policy deck
         """
-        random.shuffle(self.policies)
+        random.shuffle(self.policy_deck)
 
     def reshuffle_policies_with_discarded(self):
         """
         Adds the discarded policies to the policy deck, and shuffles them
         """
-        self.policies.extend(self.discarded_policies)
+        self.policy_deck.extend(self.discarded_policies)
         self.discarded_policies = []
         self.shuffle_policies()
 
@@ -221,7 +221,7 @@ class GameState:
         :return: The enacted policy type
         :rtype: str
         """
-        policy_type = self.policies.pop()
+        policy_type = self.policy_deck.pop()
         self.enact_policy(policy_type)
 
         return policy_type
@@ -266,7 +266,7 @@ class GameState:
         :return: The policies
         :rtype: List[str]
         """
-        self.policies, policies = self.policies[:-3], self.policies[-3:]
+        self.policy_deck, policies = self.policy_deck[:-3], self.policy_deck[-3:]
         return policies
 
     def add_to_discard(self, policy_type: str):
