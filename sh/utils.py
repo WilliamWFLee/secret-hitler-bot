@@ -109,9 +109,11 @@ async def get_vote_from_user(
             and check_user == user
         )
 
-    if message is not None:
-        await user.send(message)
-    msg = await user.send(f"React with {YES} for {yes_text} or {NO} for {no_text}")
+    if message is None:
+        message = ""
+    msg = await user.send(
+        f"{message}\nReact with {YES} for {yes_text} or {NO} for {no_text}"
+    )
     await msg.add_reaction(YES)
     await msg.add_reaction(NO)
 
