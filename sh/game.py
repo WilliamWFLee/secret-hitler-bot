@@ -184,7 +184,7 @@ class Game:
                 "Discarded policies have been added to the policy deck"
             )
             await self._broadcast("The deck has been reshuffled")
-            await self._broadcast("There are now ")
+            await self._reveal_deck_distribution()
 
     async def _chaos(self):
         await self._broadcast(
