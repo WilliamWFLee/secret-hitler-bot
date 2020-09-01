@@ -8,6 +8,7 @@ Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 """
 
 import random
+from collections import defaultdict
 from typing import Callable, List, Optional, Iterable
 
 import discord
@@ -32,12 +33,53 @@ POLICY_TARGET = {
 }
 
 
+def NoneDefaultDict(*args, **kwargs) -> defaultdict:
+    """
+    Returns an instance of :class:`defaultdict` where the default is :data:`None`.
+
+    :return: The instance of the defaultdict
+    :rtype: defaultdict
+    """
+    return defaultdict(lambda: None, *args, **kwargs)
+
+
+EXECUTIVE_ACTION = {
+    player_count: v
+    for k, v in {
+        (5, 6): NoneDefaultDict(
+            {
+                3: "policy_peek",
+                4: "execute",
+                5: "execute",
+            }
+        ),
+        (7, 8): NoneDefaultDict(
+            {
+                2: "loyalty",
+                3: "special_election",
+                4: "execute",
+                5: "execute",
+            }
+        ),
+        (9, 10): NoneDefaultDict(
+            {
+                1: "loyalty",
+                2: "loyalty",
+                3: "special_election",
+                4: "execute",
+                5: "execute",
+            }
+        ),
+    }.items()
+    for player_count in k
+}
+
+
 class GameState:
     def __init__(self):
         """
         Initialises an instance of the state of a Secret Hitler game
         """
-
         self.players = {}
         self.reset()
 
@@ -269,6 +311,16 @@ class GameState:
         self.policy_deck, policies = self.policy_deck[:-3], self.policy_deck[-3:]
         return policies
 
+    def peek_top_three_policies(self) -> List[str]:
+        """
+        Returns the three policies at the top of the policy deck
+        in top-to-bottom order without removing them
+
+        :return: The three policies
+        :rtype: List[str]
+        """
+        return self.policy_deck[-3:][::-1]
+
     def add_to_discard(self, policy_type: str):
         """
         Adds the specified policy type to the discard pile
@@ -288,3 +340,11 @@ class GameState:
         :rtype: bool
         """
         return self.policy_counts[policy_type] >= POLICY_TARGET[policy_type]
+
+    def get_executive_action(self) -> Optional[str]:
+        """
+        Returns a string representing the executive action to be carried out
+
+        :return: The executive action, or None if no action is applicable
+        """
+        return EXECUTIVE_ACTION[len(self.players)][self.policy_counts["fascist"]]

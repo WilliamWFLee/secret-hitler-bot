@@ -299,7 +299,7 @@ class Game:
             self.bot,
             user,
             message=(
-                "Do you wish to claim what policies you received?\n"
+                "Do you wish to claim what policies you received/saw?\n"
                 "If you're communicating with other players via voice, "
                 "then you may select 'No'"
             ),
@@ -309,7 +309,7 @@ class Game:
         self, claiming_user: discord.User, policies: Iterable[str]
     ):
         await self._broadcast(
-            f"{claiming_user} claims to have received **{{}}**".format(
+            f"{claiming_user} claims to have received/seen **{{}}**".format(
                 ", ".join(policy.title() for policy in policies)
             )
         )
@@ -331,7 +331,7 @@ class Game:
     async def _pres_chancellor_claims(self):
         await asyncio.gather(self._pres_claim(), self._chancellor_claim())
 
-    async def _play_legislative_session(self) -> bool:
+    async def _play_legislative_session(self) -> Optional[str]:
         await self._broadcast("**LEGISLATIVE SESSION**")
         await self._broadcast(
             "The president will now receive the three policies at the top of the deck "
@@ -352,18 +352,49 @@ class Game:
                     "their target number of policies to enact"
                 )
                 self._declare_win(policy_type)
-                return False
+                return None
 
         await self._pres_chancellor_claims()
         await self._check_policy_deck()
+        return chosen_policy
+
+    async def _policy_peek(self):
+        await self._broadcast(
+            "The president may now peek at the three policies "
+            "on the top of the policy deck"
+        )
+        policies = self.state.peek_top_three_policies()
+        await self.state.president.send(
+            "The three policies are (from top to bottom) **{}**".format(
+                ", ".join(policy.title() for policy in policies)
+            )
+        )
+        await self._pres_claim()
+
+    async def _play_executive_action(self, policy_enacted: str) -> bool:
+        if policy_enacted != "fascist":
+            return True
+        executive_action = self.state.get_executive_action()
+        if executive_action:
+            await self._broadcast("**EXECUTIVE ACTION**")
+            executive_action_to_coro = {
+                "policy_peek": self._policy_peek,
+            }
+            result = await executive_action_to_coro[executive_action]()
+            if result is False:
+                return False
         return True
 
     async def _play_round(self) -> bool:
-        rounds = (self._play_election_round, self._play_legislative_session)
-        for round_ in rounds:
-            game_on = await round_()
-            if not game_on:
-                return False
+        game_on = await self._play_election_round()
+        if not game_on:
+            return False
+        policy_enacted = await self._play_legislative_session()
+        if policy_enacted is None:
+            return False
+        game_on = await self._play_executive_action(policy_enacted)
+        if not game_on:
+            return False
         return True
 
     async def _reveal_roles(self):
