@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-sh.setup
+sh.cog
 
 Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 """
