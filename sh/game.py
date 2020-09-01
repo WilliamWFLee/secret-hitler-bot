@@ -131,6 +131,9 @@ class Game:
             pres_candidate = self.state.get_presidential_candidate()
             await self._broadcast(f"The **presidential** candidate is {pres_candidate}")
         # Have the presidential candidate choose a chancellor
+        await self._broadcast(
+            "The presidential candidate will now choose a chancellor candidate"
+        )
         chancellor_candidate = await self._pres_choose_chancellor(pres_candidate)
         await self._broadcast(
             f"**{pres_candidate}** has nominated "
