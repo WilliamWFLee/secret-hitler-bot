@@ -389,7 +389,9 @@ class Game:
     async def _reveal_roles(self):
         await self._broadcast("Everyone's roles:\n")
         await self._broadcast(
-            "\n".join("{user}: **{role}**" for user, role in self.state.players.items())
+            "\n".join(
+                f"{user}: **{role}**" for user, role in self.state.players.items()
+            )
         )
 
     async def _declare_win(self, role: str):
