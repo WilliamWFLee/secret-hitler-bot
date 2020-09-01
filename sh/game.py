@@ -85,23 +85,13 @@ class Game:
         self, pres_candidate: discord.User = None
     ) -> discord.User:
         candidates = self.state.get_chancellor_candidates(pres_candidate)
-        cdtes_list = "\n".join(
-            f"{i + 1}: {candidate}" for i, candidate in enumerate(candidates)
-        )
-
-        candidate_idx = await ut.get_int_choice_from_user(
+        candidate = await ut.get_choice_from_user(
             self.bot,
             pres_candidate,
-            message=(
-                "Choose someone to be the next chancellor candidate:\n"
-                f"{cdtes_list}\n"
-                "React with the number of the player to nominate"
-            ),
-            min_=1,
-            max_=len(candidates),
+            message="Choose someone to be the next chancellor candidate",
+            choices=candidates,
         )
-
-        return candidates[candidate_idx - 1]
+        return candidate
 
     async def _show_roles(self):
         await asyncio.gather(
@@ -235,64 +225,42 @@ class Game:
 
     async def _pres_choose_policies(self) -> List[str]:
         policies = self.state.get_top_three_policies()
-        policies_list = "\n".join(
-            f"{i + 1}: **{policy.title()}**" for i, policy in enumerate(policies)
-        )
-        discard_index = await ut.get_int_choice_from_user(
+        discard_policy = await ut.get_choice_from_user(
             self.bot,
             self.state.president,
-            message=(
-                "You must choose a policy to discard:\n"
-                f"{policies_list}\n"
-                "React with the number of the policy you want to **discard**"
-            ),
-            min_=1,
-            max_=3,
+            message="You must choose a policy to discard",
+            choices=policies,
         )
 
-        self.state.add_to_discard(policies.pop(discard_index - 1))
+        self.state.add_to_discard(policies.remove(discard_policy))
         return policies
 
     async def _chancellor_choose_policy(self, policies: List[str]) -> str:
-        policies_list = "\n".join(
-            f"{i + 1}: **{policy.title()}**" for i, policy in enumerate(policies)
-        )
-        chosen_index = await ut.get_int_choice_from_user(
+        chosen_policy = await ut.get_choice_from_user(
             self.bot,
             self.state.chancellor,
-            message=(
-                "You must choose a policy to enact:\n"
-                f"{policies_list}\n"
-                "React with the number of the policy you want to **enact**"
-            ),
-            min_=1,
-            max_=2,
+            message="You must choose a policy to enact",
+            choices=policies,
         )
 
-        return policies[chosen_index - 1]
+        return chosen_policy
 
     async def _get_claim(self, user: discord.User, *, repeat: int) -> Iterable[str]:
-        claims = list(
-            itertools.combinations_with_replacement(
+        claims = (
+            ", ".join(combo)
+            for combo in itertools.combinations_with_replacement(
                 self.state.policy_counts.keys(), r=repeat
             )
         )
-        claims_list = "\n".join(
-            f"{i + 1}: {', '.join(policy.title() for policy in policies)}"
-            for i, policies in enumerate(claims)
-        )
-
-        claim_index = await ut.get_int_choice_from_user(
+        claim = await ut.get_choice_from_user(
             self.bot,
             user,
             message=(
-                f"{claims_list}\n"
                 "Choose the number of the combination you wish to claim you received"
             ),
-            min_=1,
-            max_=len(claims),
+            choices=claims,
         )
-        return claims[claim_index - 1]
+        return claim.split(", ")
 
     async def _get_wish_to_make_claim(self, user: discord.User):
         return await ut.get_vote_from_user(
@@ -374,22 +342,12 @@ class Game:
     async def _execution(self) -> bool:
         await self._broadcast("The president must now choose a player to kill")
         alive_players = self.state.get_alive_players(exclude=(self.state.president,))
-        player_list = "\n".join(
-            f"{i + 1}: {player}" for i, player in enumerate(alive_players)
-        )
-        player_index = await ut.get_int_choice_from_user(
+        selected_player = await ut.get_choice_from_user(
             self.bot,
             self.state.president,
-            message=(
-                "Choose the player you want to kill\n"
-                f"{player_list}\n"
-                "React with the number of the player to kill"
-            ),
-            min_=1,
-            max_=len(alive_players),
+            message="Choose the player you want to kill",
+            choices=alive_players,
         )
-
-        selected_player = alive_players[player_index - 1]
         await self._broadcast(
             f"{self.state.president} formally executes {selected_player}"
         )

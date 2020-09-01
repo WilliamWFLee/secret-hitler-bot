@@ -8,41 +8,36 @@ Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 """
 
 import asyncio
-from typing import Optional
+from typing import Any, Iterable, Optional
 
 import discord
 
 YES = "✅"
 NO = "❌"
 
-INT_TO_EMOJI = {
-    0: "0️⃣",
-    1: "1️⃣",
-    2: "2️⃣",
-    3: "3️⃣",
-    4: "4️⃣",
-    5: "5️⃣",
-    6: "6️⃣",
-    7: "7️⃣",
-    8: "8️⃣",
-    9: "9️⃣",
-    10: "🔟",
-}
-
-EMOJI_TO_INT = {v: k for k, v in INT_TO_EMOJI.items()}
+NUMBER_EMOJI = [
+    "1️⃣",
+    "2️⃣",
+    "3️⃣",
+    "4️⃣",
+    "5️⃣",
+    "6️⃣",
+    "7️⃣",
+    "8️⃣",
+    "9️⃣",
+    "🔟",
+]
 
 
-async def get_int_choice_from_user(
+async def get_choice_from_user(
     client: discord.Client,
     user: discord.User,
     *,
     message: Optional[str] = None,
-    min_: int = 0,
-    max_: int = 10,
+    choices: Iterable[Any] = (),
 ):
     """
-    Gets a integer choice from the specified user, with the allowed values
-    between a minimum and maximum value.
+    Gets a choice from a user. The number of choices must not exceed 10.
 
     :param client: The Discord client to wait for the reaction on
     :type client: discord.Client
@@ -50,33 +45,39 @@ async def get_int_choice_from_user(
     :type user: discord.User
     :param message: The message prompt to send, defaults to None
     :type message: Optional[str]
-    :param min_: The minimum value of the choice, defaults to 0
-    :type min_: int
     :param max_: The maximum value of the choice, defaults to 10
     :type max_: int
+    :raises ValueError: If the number of choices is more than 10 or empty
     """
 
     def check(reaction, check_user):
         return (
-            str(reaction.emoji) in emoji
+            str(reaction.emoji) in emoji_to_choice
             and reaction.message.id == msg.id
             and check_user == user
         )
 
-    if min_ < 0:
-        raise ValueError("Minimum value cannot be less than 0")
-    if max_ > 10:
-        raise ValueError("Maximum value cannot be more than 10")
+    choices = tuple(choices)
+    if not choices:
+        raise ValueError("Choices cannot be empty")
+    if len(choices) > 10:
+        raise ValueError("Number of choices cannot be more than 10")
 
     if message is None:
-        message = f"Pick a number between {min_} and {max_} inclusive"
-
-    emoji = [INT_TO_EMOJI[v] for v in range(min_, max_ + 1)]
+        message = ""
+    else:
+        message += "\n"
+    emoji_to_choice = {emoji: choice for emoji, choice in zip(NUMBER_EMOJI, choices)}
+    message += (
+        "\n".join(f"{emoji} {choice}" for emoji, choice in emoji_to_choice.items())
+        + "\n"
+    )
+    message += "Choose by reacting with the number of your choice"
     msg = await user.send(message)
-    await asyncio.gather(*(msg.add_reaction(e) for e in emoji))
+    await asyncio.gather(*(msg.add_reaction(emoji) for emoji in emoji_to_choice))
     reaction, _ = await client.wait_for("reaction_add", check=check)
     await msg.delete()
-    return EMOJI_TO_INT[str(reaction.emoji)]
+    return emoji_to_choice[str(reaction.emoji)]
 
 
 async def get_vote_from_user(
