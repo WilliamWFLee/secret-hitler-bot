@@ -9,7 +9,7 @@ Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 
 import asyncio
 import itertools
-from typing import List, Optional, Tuple, Iterable
+from typing import Iterable, List, Optional, Tuple
 
 import discord
 from discord.ext import commands
@@ -68,12 +68,18 @@ class Game:
 
         return inner
 
-    def with_inactivity_timer_reset(coro):  # noqa
-        async def inner(self, *args, **kwargs):
+    def with_inactivity_timer_reset(coro_or_func):  # noqa
+        async def coro_inner(self, *args, **kwargs):
             self.inactivity_timer = 0
-            return await coro(self, *args, **kwargs)
+            return await coro_or_func(self, *args, **kwargs)
 
-        return inner
+        def func_inner(self, *args, **kwargs):
+            self.inactivity_timer = 0
+            return coro_or_func(self, *args, **kwargs)
+
+        if asyncio.iscoroutinefunction(coro_or_func):
+            return coro_inner
+        return func_inner
 
     async def _broadcast(self, *args, **kwargs):
         await asyncio.gather(
@@ -239,6 +245,7 @@ class Game:
         await self._reveal_deck_distribution()
 
     @with_section_divider
+    @with_inactivity_timer_reset
     async def _play_election_round(self) -> bool:
         while True:
             success = await self._hold_election()
@@ -362,6 +369,7 @@ class Game:
             await self._enact_policy(chosen_policy)
 
     @with_section_divider
+    @with_inactivity_timer_reset
     async def _play_legislative_session(self) -> Optional[str]:
         await self._broadcast("**LEGISLATIVE SESSION**")
         if self.state.can_veto():
@@ -480,6 +488,7 @@ class Game:
         self.state.next_presidential_candidate = next_pres_candidate
 
     @with_section_divider
+    @with_inactivity_timer_reset
     async def _play_executive_action(self, policy_enacted: str) -> bool:
         if policy_enacted != "fascist":
             return True
@@ -534,6 +543,7 @@ class Game:
         self.inactivity_timer += seconds
         return self.inactivity_timer >= INACTIVITY_LIMIT
 
+    @with_inactivity_timer_reset
     def add_player(self, user: discord.User) -> bool:
         """
         Add a player to this game instance
@@ -548,6 +558,7 @@ class Game:
         self.state.players[user] = None
         return True
 
+    @with_inactivity_timer_reset
     def remove_player(self, user: discord.User) -> Optional[bool]:
         """
         Remove a player from the game instance
@@ -569,6 +580,7 @@ class Game:
             self.admin = list(self.state.players)[0]
         return True
 
+    @with_inactivity_timer_reset
     async def start(self):
         """
         Start the game.
