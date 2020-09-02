@@ -59,8 +59,14 @@ class SetupCog(commands.Cog, name="Setup"):
             return await ctx.send("Game has not been created yet")
         if self.games[ctx.guild] in self.game_tasks:
             return await ctx.send("You can't leave while the game is ongoing!")
-        success = self.games[ctx.guild].remove_player(ctx.author)
-        if success:
+        ret = self.games[ctx.guild].remove_player(ctx.author)
+        if ret is None:
+            del self.games[ctx.guild]
+            await ctx.send(
+                "You have left the game and the game has been deleted, "
+                "because no players remained"
+            )
+        elif ret:
             await ctx.send("You have left the game :cry:")
         else:
             await ctx.send("You weren't in the game!")

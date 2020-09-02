@@ -517,18 +517,25 @@ class Game:
         self.state.players[user] = None
         return True
 
-    def remove_player(self, user: discord.User) -> bool:
+    def remove_player(self, user: discord.User) -> Optional[bool]:
         """
         Remove a player from the game instance
 
         :param user: The user to remove
         :type user: discord.User
-        :return: :data:`True` if player was removed, :data:`False` if player was not in game
+        :return: :data:`True` if player was removed,
+                 :data:`False` if player was not in game,
+                 and :data:`None` if no players remain in the game
         :rtype: bool
         """
         if user not in self.state.players:
             return False
         del self.state.players[user]
+        if self.admin == user:
+            self.admin = None
+            if not self.state.players:
+                return None
+            self.admin = list(self.state.players)[0]
         return True
 
     async def start(self, channel: discord.TextChannel):
