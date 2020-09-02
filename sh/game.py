@@ -25,7 +25,7 @@ class Game:
     Class for managing a game of Secret Hitler
     """
 
-    def __init__(self, bot: commands.Bot, guild: discord.Guild):
+    def __init__(self, bot: commands.Bot, guild: discord.Guild, admin: discord.User):
         """
         Initialises an instance of a Secret Hitler game
 
@@ -36,6 +36,7 @@ class Game:
         """
         self.bot = bot
         self.guild = guild
+        self.admin = admin
         self.state = GameState()
 
     def with_section_divider(coro):  # noqa
@@ -532,6 +533,7 @@ class Game:
                 f"Minimum number of players required is {MIN_PLAYERS}: "
                 f"{MIN_PLAYERS - len(self.state.players)} more player(s) required"
             )
+        await channel.send("Game of Secret Hitler has started!")
         self.state.randomise_roles()
         self.state.populate_policies()
         self.state.shuffle_policies()

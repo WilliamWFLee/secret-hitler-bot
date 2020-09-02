@@ -32,7 +32,7 @@ class SetupCog(commands.Cog, name="Setup"):
     async def join(self, ctx):
         if ctx.guild not in self.games:
             await ctx.send("Creating game...")
-            self.games[ctx.guild] = Game(self.bot, ctx.guild)
+            self.games[ctx.guild] = Game(self.bot, ctx.guild, ctx.author)
         success = self.games[ctx.guild].add_player(ctx.author)
         if success:
             await ctx.send("Added you to the game!")
@@ -45,7 +45,7 @@ class SetupCog(commands.Cog, name="Setup"):
         if ctx.guild in self.games:
             await ctx.send("Game has already been created")
         else:
-            self.games[ctx.guild] = Game(self.bot, ctx.guild)
+            self.games[ctx.guild] = Game(self.bot, ctx.guild, ctx.author)
             await ctx.send("Game created!")
 
     @commands.command()
@@ -65,12 +65,15 @@ class SetupCog(commands.Cog, name="Setup"):
     @commands.guild_only()
     async def start(self, ctx):
         if ctx.guild not in self.games:
-            await ctx.send("Game has not been created")
-        elif ctx.guild in self.game_tasks:
-            await ctx.send("Game has already started")
-        else:
-            task = asyncio.create_task(self.run_game(ctx.guild, ctx.channel))
-            self.game_tasks[ctx.guild] = task
+            return await ctx.send("Game has not been created")
+        if self.games[ctx.guild].admin != ctx.author:
+            return await ctx.send(
+                "Only the creator of the game has permission has start the game"
+            )
+        if ctx.guild in self.game_tasks:
+            return await ctx.send("Game has already started")
+        task = asyncio.create_task(self.run_game(ctx.guild, ctx.channel))
+        self.game_tasks[ctx.guild] = task
 
 
 def setup(bot):
