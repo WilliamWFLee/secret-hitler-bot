@@ -97,7 +97,7 @@ class SetupCog(commands.Cog, name="Setup"):
             return await ctx.send("Game has not been created")
         if self.games[ctx.guild].admin != ctx.author:
             return await ctx.send(
-                "Only the creator of the game has permission to start the game"
+                "Only the admin of the game has permission to start the game"
             )
         if ctx.guild in self.game_tasks:
             return await ctx.send("Game has already started")
@@ -110,7 +110,7 @@ class SetupCog(commands.Cog, name="Setup"):
             return await ctx.send("Game has not been created")
         if self.games[ctx.guild].admin != ctx.author:
             return await ctx.send(
-                "Only the creator of the game has permission to stop the game"
+                "Only the admin of the game has permission to stop the game"
             )
         if ctx.guild not in self.game_tasks:
             return await ctx.send("Game has not been started")
