@@ -216,7 +216,7 @@ class GameState:
                 lambda user, _: (
                     (
                         user != self.chancellor
-                        if len(self.get_alive_players()) <= 6
+                        if len(self.get_alive_players()) <= 5
                         else user not in (self.president, self.chancellor)
                     )
                     and user != pres_candidate
