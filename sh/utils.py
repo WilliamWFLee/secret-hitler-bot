@@ -64,9 +64,11 @@ async def get_choice_from_user(
     message += "Choose by reacting with the number of your choice"
     msg = await user.send(message)
     await asyncio.gather(*(msg.add_reaction(emoji) for emoji in emoji_to_choice))
-    reaction, _ = await client.wait_for("reaction_add", check=check)
-    await msg.delete()
-    return emoji_to_choice[str(reaction.emoji)]
+    try:
+        reaction, _ = await client.wait_for("reaction_add", check=check)
+        return emoji_to_choice[str(reaction.emoji)]
+    finally:
+        await msg.delete()
 
 
 async def get_vote_from_user(
@@ -107,8 +109,10 @@ async def get_vote_from_user(
     await msg.add_reaction(YES)
     await msg.add_reaction(NO)
 
-    reaction, _ = await client.wait_for("reaction_add", check=check)
-    await msg.delete()
-    if str(reaction.emoji) == YES:
-        return True
-    return False
+    try:
+        reaction, _ = await client.wait_for("reaction_add", check=check)
+        if str(reaction.emoji) == YES:
+            return True
+        return False
+    finally:
+        await msg.delete()
