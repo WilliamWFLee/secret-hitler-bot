@@ -50,7 +50,6 @@ EXECUTIVE_ACTION = {
     for k, v in {
         (5, 6): NoneDefaultDict(
             {
-                1: "special_election",
                 3: "policy_peek",
                 4: "execute",
                 5: "execute",
