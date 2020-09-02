@@ -27,7 +27,10 @@ class SetupCog(commands.Cog, name="Setup"):
         finally:
             del self.game_tasks[guild]
 
-    @commands.command()
+    @commands.command(
+        help="Joins the game on this server.\n"
+        "If the game doesn't exist, then it is created"
+    )
     @commands.guild_only()
     async def join(self, ctx):
         if ctx.guild not in self.games:
@@ -40,7 +43,7 @@ class SetupCog(commands.Cog, name="Setup"):
         else:
             await ctx.send("You've already been added to the game!")
 
-    @commands.command()
+    @commands.command(help="Creates the game, and adds you to the game")
     @commands.guild_only()
     async def create(self, ctx):
         if ctx.guild in self.games:
@@ -49,7 +52,7 @@ class SetupCog(commands.Cog, name="Setup"):
             self.games[ctx.guild] = Game(self.bot, ctx.guild, ctx.author)
             await ctx.send("Game created!")
 
-    @commands.command()
+    @commands.command(help="Leave the game. Fails if the game is ongoing")
     @commands.guild_only()
     async def leave(self, ctx):
         if ctx.guild not in self.games:
@@ -62,7 +65,7 @@ class SetupCog(commands.Cog, name="Setup"):
         else:
             await ctx.send("You weren't in the game!")
 
-    @commands.command()
+    @commands.command(help="Starts the game. Only the admin can do this")
     @commands.guild_only()
     async def start(self, ctx):
         if ctx.guild not in self.games:
@@ -76,7 +79,7 @@ class SetupCog(commands.Cog, name="Setup"):
         task = asyncio.create_task(self.run_game(ctx.guild, ctx.channel))
         self.game_tasks[ctx.guild] = task
 
-    @commands.command()
+    @commands.command(help="Shows info about the game on this server")
     @commands.guild_only()
     async def show(self, ctx):
         embed = discord.Embed(title="Secret Hitler")
