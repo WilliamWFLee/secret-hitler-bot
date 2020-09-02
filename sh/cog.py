@@ -33,6 +33,7 @@ class SetupCog(commands.Cog, name="Setup"):
         if ctx.guild not in self.games:
             await ctx.send("Creating game...")
             self.games[ctx.guild] = Game(self.bot, ctx.guild, ctx.author)
+            return await ctx.send("Added you to the game!")
         success = self.games[ctx.guild].add_player(ctx.author)
         if success:
             await ctx.send("Added you to the game!")

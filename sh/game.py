@@ -27,17 +27,21 @@ class Game:
 
     def __init__(self, bot: commands.Bot, guild: discord.Guild, admin: discord.User):
         """
-        Initialises an instance of a Secret Hitler game
+        Initialises an instance of a Secret Hitler game.
+        Automatically adds the admin to the game.
 
         :param bot: The discord.py bot instance tied to this game
         :type bot: commands.Bot
         :param guild: The guild this game is running in
         :type guild: discord.Guild
+        :param admin: The admin of this game
+        :type admin: discord.User
         """
         self.bot = bot
         self.guild = guild
         self.admin = admin
         self.state = GameState()
+        self.add_player(admin)
 
     @property
     def players(self):
