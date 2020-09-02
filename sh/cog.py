@@ -87,10 +87,7 @@ class SetupCog(commands.Cog, name="Setup"):
         embed.add_field(name="Game status", value=status, inline=False)
 
         if ctx.guild in self.games:
-            embed.add_field(
-                name="Admin",
-                value=self.games[ctx.guild].admin.mention
-            )
+            embed.add_field(name="Admin", value=self.games[ctx.guild].admin.mention)
             players = "\n".join(user.mention for user in self.games[ctx.guild].players)
             embed.add_field(
                 name="Players",
