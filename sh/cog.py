@@ -75,6 +75,31 @@ class SetupCog(commands.Cog, name="Setup"):
         task = asyncio.create_task(self.run_game(ctx.guild, ctx.channel))
         self.game_tasks[ctx.guild] = task
 
+    @commands.command()
+    @commands.guild_only()
+    async def show(self, ctx):
+        embed = discord.Embed(title="Secret Hitler")
+        status = "Not created"
+        if ctx.guild in self.games:
+            status = "Created"
+        if ctx.guild in self.game_tasks:
+            status = "Started"
+        embed.add_field(name="Game status", value=status, inline=False)
+
+        if ctx.guild in self.games:
+            embed.add_field(
+                name="Admin",
+                value=self.games[ctx.guild].admin.mention
+            )
+            players = "\n".join(user.mention for user in self.games[ctx.guild].players)
+            embed.add_field(
+                name="Players",
+                value=players if players else "No players yet",
+                inline=False,
+            )
+
+        await ctx.send(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(SetupCog(bot))

@@ -39,6 +39,13 @@ class Game:
         self.admin = admin
         self.state = GameState()
 
+    @property
+    def players(self):
+        """
+        Shortcut for Game.state.players
+        """
+        return self.state.players
+
     def with_section_divider(coro):  # noqa
         async def inner(self, *args, **kwargs):
             await self._broadcast(25 * "-")
