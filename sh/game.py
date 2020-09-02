@@ -597,8 +597,13 @@ class Game:
         await self._show_roles()
         await self._reveal_deck_distribution()
         running = True
-        while running:
-            game_continue = await self._play_round()
-            if not game_continue:
-                running = False
-        self.state.reset()
+        try:
+            while running:
+                game_continue = await self._play_round()
+                if not game_continue:
+                    running = False
+        except asyncio.CancelledError:
+            await self._broadcast("**Game was stopped**")
+            raise
+        finally:
+            self.state.reset()
