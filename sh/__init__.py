@@ -10,7 +10,7 @@ To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-
 or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 """
 
-__version__ = "1.0.0dev1"
+__version__ = "1.0.0a1"
 __author__ = "William Lee"
 
 from .cog import setup  # noqa: F401
