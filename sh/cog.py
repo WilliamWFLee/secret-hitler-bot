@@ -10,7 +10,7 @@ Licensed under CC BY-NC-SA 4.0, see LICENSE for details.
 import asyncio
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from .game import Game
 
@@ -20,10 +20,29 @@ class SetupCog(commands.Cog, name="Setup"):
         self.bot = bot
         self.games = {}
         self.game_tasks = {}
+        self.inactivity_loop.start()
 
-    async def run_game(self, guild: discord.Guild, channel: discord.TextChannel):
+    @tasks.loop(seconds=10)
+    async def inactivity_loop(self):
+        for guild, game in self.games.copy().items():
+            if game.increment_inactivity_timer(10):
+                await self.stop_game(guild)
+                await game.channel.send(
+                    "Game has been inactive for too long, and has been deleted"
+                )
+                del self.games[guild]
+
+    @inactivity_loop.before_loop
+    async def before_inactivity_loop(self):
+        await self.bot.wait_until_ready()
+
+    async def stop_game(self, guild: discord.Guild):
+        if guild in self.game_tasks:
+            self.game_tasks[guild].cancel()
+
+    async def run_game(self, guild: discord.Guild):
         try:
-            await self.games[guild].start(channel)
+            await self.games[guild].start()
         finally:
             del self.game_tasks[guild]
 
@@ -35,7 +54,7 @@ class SetupCog(commands.Cog, name="Setup"):
     async def join(self, ctx):
         if ctx.guild not in self.games:
             await ctx.send("Creating game...")
-            self.games[ctx.guild] = Game(self.bot, ctx.guild, ctx.author)
+            self.games[ctx.guild] = Game(self.bot, ctx.channel, ctx.author)
             return await ctx.send("Added you to the game!")
         success = self.games[ctx.guild].add_player(ctx.author)
         if success:
@@ -49,7 +68,7 @@ class SetupCog(commands.Cog, name="Setup"):
         if ctx.guild in self.games:
             await ctx.send("Game has already been created")
         else:
-            self.games[ctx.guild] = Game(self.bot, ctx.guild, ctx.author)
+            self.games[ctx.guild] = Game(self.bot, ctx.channel, ctx.author)
             await ctx.send("Game created!")
 
     @commands.command(help="Leave the game. Fails if the game is ongoing")
@@ -82,7 +101,7 @@ class SetupCog(commands.Cog, name="Setup"):
             )
         if ctx.guild in self.game_tasks:
             return await ctx.send("Game has already started")
-        task = asyncio.create_task(self.run_game(ctx.guild, ctx.channel))
+        task = asyncio.create_task(self.run_game(ctx.guild))
         self.game_tasks[ctx.guild] = task
 
     @commands.command(help="Shows info about the game on this server")

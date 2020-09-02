@@ -18,6 +18,7 @@ from . import utils as ut
 from .state import GameState
 
 MIN_PLAYERS = 5
+INACTIVITY_LIMIT = 300
 
 
 class Game:
@@ -25,23 +26,33 @@ class Game:
     Class for managing a game of Secret Hitler
     """
 
-    def __init__(self, bot: commands.Bot, guild: discord.Guild, admin: discord.User):
+    def __init__(
+        self, bot: commands.Bot, channel: discord.TextChannel, admin: discord.User
+    ):
         """
         Initialises an instance of a Secret Hitler game.
         Automatically adds the admin to the game.
 
         :param bot: The discord.py bot instance tied to this game
         :type bot: commands.Bot
-        :param guild: The guild this game is running in
-        :type guild: discord.Guild
+        :param channel: The channel to use for server-wide output
+        :type channel: discord.Channel
         :param admin: The admin of this game
         :type admin: discord.User
         """
         self.bot = bot
-        self.guild = guild
+        self.channel = channel
         self.admin = admin
         self.state = GameState()
+        self.inactivity_timer = 0
         self.add_player(admin)
+
+    @property
+    def guild(self):
+        """
+        Shortcut for Game.channel.guild
+        """
+        return self.channel.guild
 
     @property
     def players(self):
@@ -53,6 +64,13 @@ class Game:
     def with_section_divider(coro):  # noqa
         async def inner(self, *args, **kwargs):
             await self._broadcast(25 * "-")
+            return await coro(self, *args, **kwargs)
+
+        return inner
+
+    def with_inactivity_timer_reset(coro):  # noqa
+        async def inner(self, *args, **kwargs):
+            self.inactivity_timer = 0
             return await coro(self, *args, **kwargs)
 
         return inner
@@ -503,6 +521,19 @@ class Game:
         await self._broadcast(f"The **{role.title()}s** have won")
         await self._reveal_roles()
 
+    def increment_inactivity_timer(self, seconds: float) -> bool:
+        """
+        Increments the activity timer,
+        and returns whether the inactivity limit has been reached
+
+        :param seconds: The number of seconds to increment the timer by
+        :type seconds: float
+        :return: Whether the inactivity has been reached
+        :rtype: bool
+        """
+        self.inactivity_timer += seconds
+        return self.inactivity_timer >= INACTIVITY_LIMIT
+
     def add_player(self, user: discord.User) -> bool:
         """
         Add a player to this game instance
@@ -538,20 +569,16 @@ class Game:
             self.admin = list(self.state.players)[0]
         return True
 
-    async def start(self, channel: discord.TextChannel):
+    async def start(self):
         """
         Start the game.
-
-        :param channel: The text channel to bind server-wide game output to
-        :type channel: discord.TextChannel
         """
-        self.channel = channel
         if len(self.state.players) < MIN_PLAYERS:
-            return await channel.send(
+            return await self.channel.send(
                 f"Minimum number of players required is {MIN_PLAYERS}: "
                 f"{MIN_PLAYERS - len(self.state.players)} more player(s) required"
             )
-        await channel.send("Game of Secret Hitler has started!")
+        await self.channel.send("Game of Secret Hitler has started!")
         self.state.randomise_roles()
         self.state.populate_policies()
         self.state.shuffle_policies()
