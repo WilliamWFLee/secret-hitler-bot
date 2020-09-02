@@ -52,7 +52,9 @@ class SetupCog(commands.Cog, name="Setup"):
     @commands.guild_only()
     async def leave(self, ctx):
         if ctx.guild not in self.games:
-            await ctx.send("Game has not been created yet")
+            return await ctx.send("Game has not been created yet")
+        if self.games[ctx.guild] in self.game_tasks:
+            return await ctx.send("You can't leave while the game is ongoing!")
         success = self.games[ctx.guild].remove_player(ctx.author)
         if success:
             await ctx.send("You have left the game :cry:")
