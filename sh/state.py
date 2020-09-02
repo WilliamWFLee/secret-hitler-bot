@@ -211,19 +211,14 @@ class GameState:
         :rtype: List[discord.User]
         """
 
-        candidates = self.get_players(
-            predicate=(
-                lambda user, _: (
-                    (
-                        user != self.chancellor
-                        if len(self.get_alive_players()) <= 5
-                        else user not in (self.president, self.chancellor)
-                    )
-                    and user != pres_candidate
-                )
-            )
-        )
+        def candidates_predicate(user, _):
+            return (
+                user != self.chancellor
+                if len(self.get_alive_players()) <= 5
+                else user not in (self.president, self.chancellor)
+            ) and user != pres_candidate
 
+        candidates = self.get_players(predicate=candidates_predicate)
         return candidates
 
     def kill_player(self, player: discord.User):
