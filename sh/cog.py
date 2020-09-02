@@ -104,7 +104,7 @@ class SetupCog(commands.Cog, name="Setup"):
         task = asyncio.create_task(self.run_game(ctx.guild))
         self.game_tasks[ctx.guild] = task
 
-    @commands.command(help="Stops the current game.")
+    @commands.command(help="Stops the current game. Only the admin can do this")
     async def stop(self, ctx):
         if ctx.guild not in self.games:
             return await ctx.send("Game has not been created")
