@@ -523,7 +523,7 @@ class Game:
 
         :param user: The user to remove
         :type user: discord.User
-        :return: :data:`True` if player was remove, :data:`False` was not in game
+        :return: :data:`True` if player was removed, :data:`False` if player was not in game
         :rtype: bool
         """
         if user not in self.state.players:
