@@ -105,6 +105,7 @@ class SetupCog(commands.Cog, name="Setup"):
         self.game_tasks[ctx.guild] = task
 
     @commands.command(help="Stops the current game. Only the admin can do this")
+    @commands.guild_only()
     async def stop(self, ctx):
         if ctx.guild not in self.games:
             return await ctx.send("Game has not been created")
