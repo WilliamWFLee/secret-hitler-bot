@@ -116,3 +116,22 @@ async def get_vote_from_user(
         return False
     finally:
         await msg.delete()
+
+
+async def wait_for_message(client: discord.Client, user: discord.User, message: str):
+    """
+    Waits until a player sends a specified message.
+
+    The message sent from the user is stripped of leading and trailing whitespace
+    before comparison for convenience
+
+    :param client: The client to use to listen for the message
+    :type client: discord.Client
+    :param user: The user to listen to
+    :type user: discord.User
+    :param message: The message to expect
+    :type message: str
+    """
+    def check(m):
+        return m.author == user and m.content.strip() == message
+    await client.wait_for("message", check=check)

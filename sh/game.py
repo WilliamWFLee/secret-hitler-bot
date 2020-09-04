@@ -46,6 +46,14 @@ class Game:
         self.state = GameState()
         self.inactivity_timer = 0
         self.add_player(admin)
+        self.reset()
+
+    def reset(self):
+        """
+        Reset the game
+        """
+        self.no_output_players = []
+        self.state.reset()
 
     @property
     def guild(self):
@@ -70,19 +78,26 @@ class Game:
 
     def with_inactivity_timer_reset(coro_or_func):  # noqa
         if asyncio.iscoroutinefunction(coro_or_func):
+
             async def coro_inner(self, *args, **kwargs):
                 self.inactivity_timer = 0
                 return await coro_or_func(self, *args, **kwargs)
+
             return coro_inner
 
         def func_inner(self, *args, **kwargs):
             self.inactivity_timer = 0
             return coro_or_func(self, *args, **kwargs)
+
         return func_inner
 
     async def _broadcast(self, *args, **kwargs):
         await asyncio.gather(
-            *(user.send(*args, **kwargs) for user in self.state.players)
+            *(
+                user.send(*args, **kwargs)
+                for user in self.state.players
+                if user not in self.no_output_players
+            )
         )
 
     async def _reveal_top_policy(self):
@@ -418,6 +433,10 @@ class Game:
         )
         await self._pres_claim()
 
+    async def _dead_player_no_output(self, player: discord.User):
+        await ut.wait_for_message(self.bot, player, "stop")
+        self.no_output_players.append(player)
+
     async def _execution(self) -> bool:
         await self._broadcast("The president must now choose a player to kill")
         alive_players = self.state.get_alive_players(exclude=(self.state.president,))
@@ -436,6 +455,15 @@ class Game:
             await self._broadcast("Hitler has been killed!")
             await self._declare_win("liberal")
             return False
+        await selected_player.send("You're now dead and out of the game.")
+        await selected_player.send(
+            "Output from the game will still be sent to you, "
+            "in case you wish to spectate."
+        )
+        await selected_player.send(
+            "**To stop game output**, send the message `stop` here at any time."
+        )
+        asyncio.create_task(self._dead_player_no_output(selected_player))
         return True
 
     async def _investigate_loyalty(self):
@@ -605,4 +633,4 @@ class Game:
             await self._broadcast("**Game was stopped**")
             raise
         finally:
-            self.state.reset()
+            self.reset()
