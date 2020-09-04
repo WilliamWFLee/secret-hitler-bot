@@ -69,16 +69,15 @@ class Game:
         return inner
 
     def with_inactivity_timer_reset(coro_or_func):  # noqa
-        async def coro_inner(self, *args, **kwargs):
-            self.inactivity_timer = 0
-            return await coro_or_func(self, *args, **kwargs)
+        if asyncio.iscoroutinefunction(coro_or_func):
+            async def coro_inner(self, *args, **kwargs):
+                self.inactivity_timer = 0
+                return await coro_or_func(self, *args, **kwargs)
+            return coro_inner
 
         def func_inner(self, *args, **kwargs):
             self.inactivity_timer = 0
             return coro_or_func(self, *args, **kwargs)
-
-        if asyncio.iscoroutinefunction(coro_or_func):
-            return coro_inner
         return func_inner
 
     async def _broadcast(self, *args, **kwargs):
