@@ -105,21 +105,21 @@ class Game:
             + " policies enacted"
         )
 
-    async def _show_role(self, user: discord.User, role: str):
+    async def _show_role(self, player: discord.User, role: str):
         if role == "hitler":
-            await user.send("You are **Hitler**")
+            await player.send("You are **Hitler**")
             if len(self.state.players) <= 6:
                 other_fascist = self.state.get_fascist_players()[0]
-                await user.send(f"The other **fascist** is {other_fascist}")
+                await player.send(f"The other **fascist** is {other_fascist}")
         else:
-            await user.send(f"You are a **{role.title()}**")
+            await player.send(f"You are a **{role.title()}**")
 
             if role == "fascist":
-                other_fascists = self.state.get_fascist_players(exclude=(user,))
+                other_fascists = self.state.get_fascist_players(exclude=(player,))
                 hitler = self.state.get_hitler()
-                await user.send(f"{hitler} is **Hitler**")
+                await player.send(f"{hitler} is **Hitler**")
                 if other_fascists:
-                    await user.send(
+                    await player.send(
                         "The other **fascists** are: "
                         + ", ".join(str(fascist) for fascist in other_fascists)
                     )
@@ -296,7 +296,7 @@ class Game:
             return None
         return chosen_policy
 
-    async def _get_claim(self, user: discord.User, *, repeat: int) -> Iterable[str]:
+    async def _get_claim(self, player: discord.User, *, repeat: int) -> Iterable[str]:
         claims = (
             ", ".join(combo)
             for combo in itertools.combinations_with_replacement(
@@ -305,7 +305,7 @@ class Game:
         )
         claim = await ut.get_choice_from_user(
             self.bot,
-            user,
+            player,
             message=(
                 "Choose the number of the combination you wish to claim you received"
             ),
@@ -313,10 +313,10 @@ class Game:
         )
         return claim.split(", ")
 
-    async def _get_wish_to_make_claim(self, user: discord.User):
+    async def _get_wish_to_make_claim(self, player: discord.User):
         return await ut.get_vote_from_user(
             self.bot,
-            user,
+            player,
             message=(
                 "Do you wish to claim what policies you received/saw?\n"
                 "If you're communicating with other players via voice, "
@@ -544,7 +544,7 @@ class Game:
         return self.inactivity_timer >= INACTIVITY_LIMIT
 
     @with_inactivity_timer_reset
-    def add_player(self, user: discord.User) -> bool:
+    def add_player(self, player: discord.User) -> bool:
         """
         Add a player to this game instance
 
@@ -553,13 +553,13 @@ class Game:
         :return: :data:`True` if the player was added, :data:`False` if the player has already been added
         :rtype: bool
         """
-        if user in self.state.players:
+        if player in self.state.players:
             return False
-        self.state.players[user] = None
+        self.state.players[player] = None
         return True
 
     @with_inactivity_timer_reset
-    def remove_player(self, user: discord.User) -> Optional[bool]:
+    def remove_player(self, player: discord.User) -> Optional[bool]:
         """
         Remove a player from the game instance
 
@@ -570,10 +570,10 @@ class Game:
                  and :data:`None` if no players remain in the game
         :rtype: bool
         """
-        if user not in self.state.players:
+        if player not in self.state.players:
             return False
-        del self.state.players[user]
-        if self.admin == user:
+        del self.state.players[player]
+        if self.admin == player:
             self.admin = None
             if not self.state.players:
                 return None
